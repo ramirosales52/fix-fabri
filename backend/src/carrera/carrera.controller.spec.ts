@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-import { Test, TestingModule } from '@nestjs/testing';
-import { CarreraController } from './carrera.controller';
-=======
 // src/carrera/carrera.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { CarreraController } from './carrera.controller';
 // Importa el servicio para mockearlo
->>>>>>> 47a0884 (segundo commit)
 import { CarreraService } from './carrera.service';
 
 describe('CarreraController', () => {
@@ -15,9 +10,6 @@ describe('CarreraController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CarreraController],
-<<<<<<< HEAD
-      providers: [CarreraService],
-=======
       providers: [
         {
           provide: CarreraService, // Mockea el servicio
@@ -32,7 +24,6 @@ describe('CarreraController', () => {
           },
         },
       ],
->>>>>>> 47a0884 (segundo commit)
     }).compile();
 
     controller = module.get<CarreraController>(CarreraController);

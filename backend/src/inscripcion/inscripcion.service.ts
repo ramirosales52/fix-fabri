@@ -4,10 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Inscripcion } from './entities/inscripcion.entity';
 import { User } from '../user/entities/user.entity';
 import { Materia } from '../materia/entities/materia.entity';
-<<<<<<< HEAD
-=======
 import { Comision } from '../comision/entities/comision.entity';
->>>>>>> 47a0884 (segundo commit)
 
 // ✅ Definimos un tipo explícito para las correlativas faltantes
 interface CorrelativaFaltante {
@@ -24,24 +21,6 @@ export class InscripcionService {
     private userRepo,
     @InjectRepository(Materia)
     private materiaRepo,
-<<<<<<< HEAD
-  ) {}
-
-  // Historial académico del estudiante
-  async historialAcademico(userId: number): Promise<Inscripcion[]> {
-    return this.inscripcionRepo.find({
-      where: { estudiante: { id: userId } },
-      relations: ['materia'],
-      order: { materia: { nombre: 'ASC' } },
-    });
-  }
-
-  // Ver materias cursando de un estudiante
-  async materiasDelEstudiante(userId: number): Promise<Inscripcion[]> {
-    return this.inscripcionRepo.find({
-      where: { estudiante: { id: userId } },
-      relations: ['materia'],
-=======
     @InjectRepository(Comision)
     private comisionRepo,
   ) {}
@@ -63,7 +42,6 @@ export class InscripcionService {
         stc: 'cursando' // Solo las que están cursando actualmente
       },
       relations: ['materia', 'comision'],
->>>>>>> 47a0884 (segundo commit)
     });
   }
 
@@ -112,13 +90,8 @@ export class InscripcionService {
     };
   }
 
-<<<<<<< HEAD
-  // Inscribir estudiante a materia
-  async inscribirse(userId: number, materiaId: number): Promise<Inscripcion> {
-=======
   // Inscribir estudiante a materia (permite múltiples inscripciones)
   async inscribirse(userId: number, materiaId: number, comisionId?: number): Promise<Inscripcion> {
->>>>>>> 47a0884 (segundo commit)
     const estudiante = await this.userRepo.findOne({ where: { id: userId } });
     const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
 
@@ -136,19 +109,6 @@ export class InscripcionService {
       );
     }
 
-<<<<<<< HEAD
-    const yaInscripto = await this.inscripcionRepo.findOne({
-      where: { estudiante: { id: userId }, materia: { id: materiaId } },
-    });
-
-    if (yaInscripto) {
-      throw new BadRequestException('Ya estás inscripto en esta materia');
-    }
-
-    const inscripcion = this.inscripcionRepo.create({
-      estudiante,
-      materia,
-=======
     // ✅ Permitir múltiples inscripciones (una por período/cursada)
     // No hay restricción de inscripción única
     
@@ -156,7 +116,6 @@ export class InscripcionService {
       estudiante,
       materia,
       comision: comisionId ? { id: comisionId } as Comision : undefined,
->>>>>>> 47a0884 (segundo commit)
       stc: 'cursando',
     });
 
@@ -167,11 +126,7 @@ export class InscripcionService {
   async cargarFaltas(inscripcionId: number, faltas: number): Promise<Inscripcion> {
     const inscripcion = await this.inscripcionRepo.findOne({
       where: { id: inscripcionId },
-<<<<<<< HEAD
-      relations: ['materia', 'estudiante'],
-=======
       relations: ['materia', 'estudiante', 'comision'],
->>>>>>> 47a0884 (segundo commit)
     });
 
     if (!inscripcion) {
@@ -186,11 +141,7 @@ export class InscripcionService {
   async cargarNota(inscripcionId: number, notaFinal: number, stc: string): Promise<Inscripcion> {
     const inscripcion = await this.inscripcionRepo.findOne({
       where: { id: inscripcionId },
-<<<<<<< HEAD
-      relations: ['materia', 'estudiante'],
-=======
       relations: ['materia', 'estudiante', 'comision'],
->>>>>>> 47a0884 (segundo commit)
     });
 
     if (!inscripcion) {
@@ -206,11 +157,7 @@ export class InscripcionService {
   async detalleMateria(inscripcionId: number, userId: number): Promise<Inscripcion> {
     const inscripcion = await this.inscripcionRepo.findOne({
       where: { id: inscripcionId, estudiante: { id: userId } },
-<<<<<<< HEAD
-      relations: ['materia', 'estudiante'],
-=======
       relations: ['materia', 'estudiante', 'comision'],
->>>>>>> 47a0884 (segundo commit)
     });
 
     if (!inscripcion) {
@@ -219,8 +166,6 @@ export class InscripcionService {
 
     return inscripcion;
   }
-<<<<<<< HEAD
-=======
 
   // Obtener todas las cursadas de un estudiante en una materia (incluye repetidos)
   async obtenerCursadasMateria(userId: number, materiaId: number): Promise<Inscripcion[]> {
@@ -233,5 +178,4 @@ export class InscripcionService {
       order: { fechaInscripcion: 'DESC' }
     });
   }
->>>>>>> 47a0884 (segundo commit)
 }

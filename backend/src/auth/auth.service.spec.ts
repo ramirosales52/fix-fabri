@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
-=======
 // src/auth/auth.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,16 +6,12 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/entities/user.entity';
 import { TestDatabaseModule } from '../test-utils/test-database.module';
->>>>>>> 47a0884 (segundo commit)
 
 describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-<<<<<<< HEAD
-      providers: [AuthService],
-=======
       imports: [
         TestDatabaseModule,
         TypeOrmModule.forFeature([User]), // AuthService probablemente no necesite todas las entidades, solo User si lo usa directamente
@@ -43,7 +35,6 @@ describe('AuthService', () => {
           },
         },
       ],
->>>>>>> 47a0884 (segundo commit)
     }).compile();
 
     service = module.get<AuthService>(AuthService);

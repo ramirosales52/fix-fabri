@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from './user.service';
-
-describe('UserService', () => {
-  let service: UserService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [UserService],
-    }).compile();
-
-    service = module.get<UserService>(UserService);
-=======
 // src/user/user.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
@@ -49,15 +35,11 @@ describe('UserService', () => {
     service = module.get<UserService>(UserService);
     mockUserRepo = module.get(getRepositoryToken(User));
     mockPlanEstudioService = module.get<PlanEstudioService>(PlanEstudioService);
->>>>>>> 47a0884 (segundo commit)
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-<<<<<<< HEAD
-});
-=======
 
   describe('create', () => {
     it('should create a user without plan de estudio', async () => {
@@ -422,4 +404,3 @@ describe('UserService', () => {
     });
   });
 });
->>>>>>> 47a0884 (segundo commit)

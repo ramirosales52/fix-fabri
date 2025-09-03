@@ -1,16 +1,10 @@
-<<<<<<< HEAD
-=======
 // src/clase/entities/clase.entity.ts
->>>>>>> 47a0884 (segundo commit)
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Materia } from '../../materia/entities/materia.entity';
 import { Horario } from '../../horario/entities/horario.entity';
 import { Asistencia } from '../../asistencia/entities/asistencia.entity';
-<<<<<<< HEAD
-=======
 import { User } from '../../user/entities/user.entity';
 import { Comision } from '../../comision/entities/comision.entity'; // ✅ Importar Comision
->>>>>>> 47a0884 (segundo commit)
 
 export enum EstadoClase {
   PROGRAMADA = 'programada',
@@ -31,8 +25,6 @@ export class Clase {
   @JoinColumn({ name: 'horarioId' })
   horario?: Horario;
 
-<<<<<<< HEAD
-=======
   // ✅ RELACIÓN AÑADIDA: Comisión (opcional)
   @ManyToOne(() => Comision, comision => comision.clases, { nullable: true })
   @JoinColumn({ name: 'comisionId' })
@@ -43,7 +35,6 @@ export class Clase {
   @JoinColumn({ name: 'docenteId' })
   docente?: User;
 
->>>>>>> 47a0884 (segundo commit)
   @Column({ type: 'timestamp' })
   fecha: Date;
 

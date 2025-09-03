@@ -1,8 +1,6 @@
 // src/comision/comision.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-// ❌ Elimina esta línea que causa el error:
-// import { Repository } from 'typeorm';
 import { Comision } from './entities/comision.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';

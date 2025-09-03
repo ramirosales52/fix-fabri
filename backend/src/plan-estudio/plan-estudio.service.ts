@@ -1,10 +1,6 @@
 // src/plan-estudio/plan-estudio.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-<<<<<<< HEAD
-// ✅ Eliminamos la importación problemática de 'typeorm'
-=======
->>>>>>> 47a0884 (segundo commit)
 import { PlanEstudio } from './entities/plan-estudio.entity';
 import { CreatePlanEstudioDto } from './dto/create-plan-estudio.dto';
 import { UpdatePlanEstudioDto } from './dto/update-plan-estudio.dto';
@@ -12,10 +8,6 @@ import { Carrera } from '../carrera/entities/carrera.entity';
 
 @Injectable()
 export class PlanEstudioService {
-<<<<<<< HEAD
-  // ✅ No necesitas declarar los tipos de los repositorios
-=======
->>>>>>> 47a0884 (segundo commit)
   constructor(
     @InjectRepository(PlanEstudio)
     private planRepo,

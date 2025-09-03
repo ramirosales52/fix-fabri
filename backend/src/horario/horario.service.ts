@@ -5,10 +5,7 @@ import { Horario, DiaSemana } from './entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
-<<<<<<< HEAD
-=======
 import { Comision } from '../comision/entities/comision.entity'; // ✅ Importar Comision
->>>>>>> 47a0884 (segundo commit)
 
 // ✅ Interfaces para el formato de horario
 export interface HorarioDiario {
@@ -23,23 +20,17 @@ export interface HorarioBloque {
     nombre: string;
     descripcion?: string;
   };
-<<<<<<< HEAD
-=======
   comision?: {
     id: number;
     nombre: string;
     descripcion?: string;
   };
->>>>>>> 47a0884 (segundo commit)
   horaInicio: string;
   horaFin: string;
   aula: string;
   esProfesor: boolean;
   materiaId: number;
-<<<<<<< HEAD
-=======
   comisionId?: number;
->>>>>>> 47a0884 (segundo commit)
 }
 
 @Injectable()
@@ -53,11 +44,8 @@ export class HorarioService {
     private userRepo,
     @InjectRepository(Inscripcion)
     private inscripcionRepo,
-<<<<<<< HEAD
-=======
     @InjectRepository(Comision)
     private comisionRepo, // ✅ Añadir repositorio de comisiones
->>>>>>> 47a0884 (segundo commit)
   ) {}
 
   async crearHorario(
@@ -66,21 +54,14 @@ export class HorarioService {
     horaInicio: string,
     horaFin: string,
     aula: string,
-<<<<<<< HEAD
-=======
     comisionId?: number, // ✅ Añadir comisionId opcional
     docenteId?: number,   // ✅ Añadir docenteId opcional
->>>>>>> 47a0884 (segundo commit)
   ): Promise<Horario> {
     const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
     if (!materia) {
       throw new NotFoundException('Materia no encontrada');
     }
 
-<<<<<<< HEAD
-    const horario = this.horarioRepo.create({
-      materia,
-=======
     // Verificar que la comisión exista si se proporciona
     let comision;
     if (comisionId) {
@@ -103,7 +84,6 @@ export class HorarioService {
       materia,
       docente,
       comision,
->>>>>>> 47a0884 (segundo commit)
       dia,
       horaInicio,
       horaFin,
@@ -116,8 +96,6 @@ export class HorarioService {
   async obtenerHorariosPorMateria(materiaId: number): Promise<Horario[]> {
     return this.horarioRepo.find({
       where: { materia: { id: materiaId } },
-<<<<<<< HEAD
-=======
       relations: ['comision', 'docente'], // ✅ Incluir relaciones
       order: { dia: 'ASC', horaInicio: 'ASC' },
     });
@@ -127,7 +105,6 @@ export class HorarioService {
     return this.horarioRepo.find({
       where: { comision: { id: comisionId } },
       relations: ['materia', 'docente'], // ✅ Incluir relaciones
->>>>>>> 47a0884 (segundo commit)
       order: { dia: 'ASC', horaInicio: 'ASC' },
     });
   }
@@ -138,10 +115,6 @@ export class HorarioService {
     horaInicio?: string,
     horaFin?: string,
     aula?: string,
-<<<<<<< HEAD
-  ): Promise<Horario> {
-    const horario = await this.horarioRepo.findOne({ where: { id } });
-=======
     comisionId?: number | null, // ✅ Añadir comisionId opcional (puede ser null)
     docenteId?: number | null,   // ✅ Añadir docenteId opcional (puede ser null)
   ): Promise<Horario> {
@@ -149,17 +122,10 @@ export class HorarioService {
       where: { id },
       relations: ['materia'] // ✅ Incluir materia para validación
     });
->>>>>>> 47a0884 (segundo commit)
     if (!horario) {
       throw new NotFoundException('Horario no encontrado');
     }
 
-<<<<<<< HEAD
-    if (dia) horario.dia = dia;
-    if (horaInicio) horario.horaInicio = horaInicio;
-    if (horaFin) horario.horaFin = horaFin;
-    if (aula) horario.aula = aula;
-=======
     // Actualizar campos simples
     if (dia !== undefined) horario.dia = dia;
     if (horaInicio !== undefined) horario.horaInicio = horaInicio;
@@ -191,7 +157,6 @@ export class HorarioService {
         horario.docente = docente;
       }
     }
->>>>>>> 47a0884 (segundo commit)
 
     return this.horarioRepo.save(horario);
   }
@@ -266,21 +231,14 @@ export class HorarioService {
     // Obtener materias en las que está inscripto
     const inscripciones = await this.inscripcionRepo.find({
       where: { estudiante: { id: userId } },
-<<<<<<< HEAD
-      relations: ['materia', 'materia.horarios'],
-=======
       relations: ['materia', 'materia.horarios', 'materia.comisiones'], // ✅ Incluir comisiones
->>>>>>> 47a0884 (segundo commit)
     });
 
     // Para cada día de la semana
     for (const dia of horarioSemana) {
       // Filtrar horarios para este día
       inscripciones.forEach(inscripcion => {
-<<<<<<< HEAD
-=======
         // Primero buscamos horarios directos de la materia
->>>>>>> 47a0884 (segundo commit)
         inscripcion.materia.horarios.forEach(horario => {
           if (horario.dia === dia.diaSemana) {
             dia.bloques.push({
@@ -289,24 +247,16 @@ export class HorarioService {
                 nombre: inscripcion.materia.nombre,
                 descripcion: inscripcion.materia.descripcion,
               },
-<<<<<<< HEAD
-=======
               comision: horario.comision ? { // ✅ Incluir información de comisión si existe
                 id: horario.comision.id,
                 nombre: horario.comision.nombre,
                 descripcion: horario.comision.descripcion,
               } : undefined,
->>>>>>> 47a0884 (segundo commit)
               horaInicio: horario.horaInicio,
               horaFin: horario.horaFin,
               aula: horario.aula,
               esProfesor: false,
               materiaId: inscripcion.materia.id,
-<<<<<<< HEAD
-            });
-          }
-        });
-=======
               comisionId: horario.comision ? horario.comision.id : undefined,
             });
           }
@@ -337,7 +287,6 @@ export class HorarioService {
             }
           });
         });
->>>>>>> 47a0884 (segundo commit)
       });
 
       // Ordenar bloques por hora
@@ -351,21 +300,14 @@ export class HorarioService {
     // Obtener materias que dicta
     const materias = await this.materiaRepo.find({
       where: { profesores: { id: userId } },
-<<<<<<< HEAD
-      relations: ['horarios'],
-=======
       relations: ['horarios', 'comisiones', 'comisiones.horarios'], // ✅ Incluir horarios de comisiones
->>>>>>> 47a0884 (segundo commit)
     });
 
     // Para cada día de la semana
     for (const dia of horarioSemana) {
       // Filtrar horarios para este día
       materias.forEach(materia => {
-<<<<<<< HEAD
-=======
         // Horarios directos de la materia
->>>>>>> 47a0884 (segundo commit)
         materia.horarios.forEach(horario => {
           if (horario.dia === dia.diaSemana) {
             dia.bloques.push({
@@ -374,24 +316,16 @@ export class HorarioService {
                 nombre: materia.nombre,
                 descripcion: materia.descripcion,
               },
-<<<<<<< HEAD
-=======
               comision: horario.comision ? { // ✅ Incluir información de comisión si existe
                 id: horario.comision.id,
                 nombre: horario.comision.nombre,
                 descripcion: horario.comision.descripcion,
               } : undefined,
->>>>>>> 47a0884 (segundo commit)
               horaInicio: horario.horaInicio,
               horaFin: horario.horaFin,
               aula: horario.aula,
               esProfesor: true,
               materiaId: materia.id,
-<<<<<<< HEAD
-            });
-          }
-        });
-=======
               comisionId: horario.comision ? horario.comision.id : undefined,
             });
           }
@@ -422,7 +356,6 @@ export class HorarioService {
             }
           });
         });
->>>>>>> 47a0884 (segundo commit)
       });
 
       // Ordenar bloques por hora

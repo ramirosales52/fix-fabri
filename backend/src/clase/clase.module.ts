@@ -11,10 +11,6 @@ import { ClaseController } from './clase.controller';
 
 @Module({
   imports: [
-<<<<<<< HEAD
-    // ✅ IMPORTANTE: Incluye Inscripcion aquí
-=======
->>>>>>> 47a0884 (segundo commit)
     TypeOrmModule.forFeature([Clase, Horario, Materia, User, Inscripcion]),
   ],
   providers: [ClaseService],

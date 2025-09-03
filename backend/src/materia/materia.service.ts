@@ -1,47 +1,3 @@
-<<<<<<< HEAD
-import { Injectable } from '@nestjs/common';
-
-export interface Materia {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-}
-
-@Injectable()
-export class MateriaService {
-  private materias: Materia[] = [];
-  private idCounter = 1;
-
-  create(createMateriaDto: any): Materia {
-    const materia: Materia = { id: this.idCounter++, ...createMateriaDto };
-    this.materias.push(materia);
-    return materia;
-  }
-
-  findAll(): Materia[] {
-    return this.materias;
-  }
-
-  findOne(id: number): Materia | undefined {
-    return this.materias.find(m => m.id === id);
-  }
-
-  update(id: number, updateMateriaDto: any): Materia | undefined {
-    const materia = this.findOne(id);
-    if (materia) {
-      Object.assign(materia, updateMateriaDto);
-    }
-    return materia;
-  }
-
-  remove(id: number): Materia | null {
-    const index = this.materias.findIndex(m => m.id === id);
-    if (index > -1) {
-      return this.materias.splice(index, 1)[0];
-    }
-    return null;
-  }
-=======
 // src/materia/materia.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -98,5 +54,4 @@ export class MateriaService {
     await this.materiaRepo.delete(id);
     return materia;
   }
->>>>>>> 47a0884 (segundo commit)
 }

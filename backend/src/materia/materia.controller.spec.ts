@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-import { Test, TestingModule } from '@nestjs/testing';
-import { MateriaController } from './materia.controller';
-=======
 // src/materia/materia.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { MateriaController } from './materia.controller';
 import { MateriaService } from './materia.service';
->>>>>>> 47a0884 (segundo commit)
 
 describe('MateriaController', () => {
   let controller: MateriaController;
@@ -14,8 +9,6 @@ describe('MateriaController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MateriaController],
-<<<<<<< HEAD
-=======
       providers: [
         {
           provide: MateriaService,
@@ -30,7 +23,6 @@ describe('MateriaController', () => {
           },
         },
       ],
->>>>>>> 47a0884 (segundo commit)
     }).compile();
 
     controller = module.get<MateriaController>(MateriaController);

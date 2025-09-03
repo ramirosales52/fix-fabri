@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { Test, TestingModule } from '@nestjs/testing';
-import { ExamenService } from './examen.service';
-=======
 // src/examen/examen.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -17,21 +13,17 @@ import { TestDatabaseModule } from '../test-utils/test-database.module';
 
 // Aumentar timeout si es necesario
 jest.setTimeout(15000);
->>>>>>> 47a0884 (segundo commit)
 
 describe('ExamenService', () => {
   let service: ExamenService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-<<<<<<< HEAD
-=======
       imports: [
         // ELIMINADO: TypeOrmModule.forRoot({...}) - Usar TestDatabaseModule
         TestDatabaseModule, // AGREGADO: Usar configuración centralizada
         TypeOrmModule.forFeature([ExamenFinal, Materia, User, Inscripcion, PlanEstudio, Carrera, Evaluacion]),
       ],
->>>>>>> 47a0884 (segundo commit)
       providers: [ExamenService],
     }).compile();
 
@@ -41,8 +33,4 @@ describe('ExamenService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 47a0884 (segundo commit)

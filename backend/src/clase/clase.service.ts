@@ -6,10 +6,7 @@ import { Horario } from '../horario/entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
-<<<<<<< HEAD
-=======
 import { Comision } from '../comision/entities/comision.entity'; // ✅ Importar Comision
->>>>>>> 47a0884 (segundo commit)
 
 @Injectable()
 export class ClaseService {
@@ -24,31 +21,21 @@ export class ClaseService {
     private userRepo,
     @InjectRepository(Inscripcion)
     private inscripcionRepo,
-<<<<<<< HEAD
-=======
     @InjectRepository(Comision)
     private comisionRepo, // ✅ Añadir repositorio de comisiones
->>>>>>> 47a0884 (segundo commit)
   ) {}
 
   async crearClase(
     materiaId: number,
     fecha: Date,
     horarioId?: number,
-<<<<<<< HEAD
-=======
     comisionId?: number, // ✅ Añadir comisionId opcional
->>>>>>> 47a0884 (segundo commit)
     estado: EstadoClase = EstadoClase.PROGRAMADA,
     motivoCancelacion?: string,
   ): Promise<Clase> {
     const materia = await this.materiaRepo.findOne({ 
       where: { id: materiaId },
-<<<<<<< HEAD
-      relations: ['inscripciones', 'inscripciones.estudiante'],
-=======
       relations: ['inscripciones', 'inscripciones.estudiante', 'comisiones'], // ✅ Incluir comisiones
->>>>>>> 47a0884 (segundo commit)
     });
     
     if (!materia) {
@@ -63,8 +50,6 @@ export class ClaseService {
       }
     }
 
-<<<<<<< HEAD
-=======
     // Verificar que la comisión exista si se proporciona
     let comision;
     if (comisionId) {
@@ -74,7 +59,6 @@ export class ClaseService {
       }
     }
 
->>>>>>> 47a0884 (segundo commit)
     // Verificar que no haya otra clase en la misma fecha y hora
     const solapamiento = await this.claseRepo.findOne({
       where: {
@@ -90,10 +74,7 @@ export class ClaseService {
     const clase = this.claseRepo.create({
       materia,
       horario,
-<<<<<<< HEAD
-=======
       comision, // ✅ Añadir comisión
->>>>>>> 47a0884 (segundo commit)
       fecha,
       estado,
       motivoCancelacion,
@@ -122,9 +103,6 @@ export class ClaseService {
   async obtenerClasesPorMateria(materiaId: number): Promise<Clase[]> {
     return this.claseRepo.find({
       where: { materia: { id: materiaId } },
-<<<<<<< HEAD
-      relations: ['horario', 'asistencias', 'asistencias.estudiante'],
-=======
       relations: ['horario', 'comision', 'asistencias', 'asistencias.estudiante'], // ✅ Incluir comision
       order: { fecha: 'DESC' },
     });
@@ -134,7 +112,6 @@ export class ClaseService {
     return this.claseRepo.find({
       where: { comision: { id: comisionId } },
       relations: ['materia', 'horario', 'asistencias', 'asistencias.estudiante'],
->>>>>>> 47a0884 (segundo commit)
       order: { fecha: 'DESC' },
     });
   }
@@ -154,26 +131,17 @@ export class ClaseService {
     fecha?: Date,
     estado?: EstadoClase,
     motivoCancelacion?: string,
-<<<<<<< HEAD
-  ): Promise<Clase> {
-    const clase = await this.claseRepo.findOne({
-      where: { id },
-      relations: ['materia', 'materia.inscripciones', 'materia.inscripciones.estudiante'],
-=======
     comisionId?: number | null, // ✅ Añadir comisionId opcional
   ): Promise<Clase> {
     const clase = await this.claseRepo.findOne({
       where: { id },
       relations: ['materia', 'materia.inscripciones', 'materia.inscripciones.estudiante', 'comision'], // ✅ Incluir comision
->>>>>>> 47a0884 (segundo commit)
     });
     
     if (!clase) {
       throw new NotFoundException('Clase no encontrada');
     }
 
-<<<<<<< HEAD
-=======
     // Manejar comisión
     if (comisionId !== undefined) {
       if (comisionId === null) {
@@ -187,7 +155,6 @@ export class ClaseService {
       }
     }
 
->>>>>>> 47a0884 (segundo commit)
     if (fecha) clase.fecha = fecha;
     if (estado) clase.estado = estado;
     if (motivoCancelacion) clase.motivoCancelacion = motivoCancelacion;
