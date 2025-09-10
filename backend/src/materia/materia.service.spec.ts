@@ -1,32 +1,39 @@
 // src/materia/materia.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { MateriaService } from './materia.service';
-import { Materia } from './entities/materia.entity';
 import { TestDatabaseModule } from '../test-utils/test-database.module';
-// Importa otras entidades que MateriaService pueda necesitar
-// import { PlanEstudio } from '../plan-estudio/entities/plan-estudio.entity';
-// import { User } from '../user/entities/user.entity';
-// import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
-
-// Aumentar timeout si es necesario
-jest.setTimeout(15000);
+import { Materia } from './entities/materia.entity';
+import { PlanEstudio } from '../plan-estudio/entities/plan-estudio.entity';
+import { User } from '../user/entities/user.entity';
+import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
+import { Comision } from '../comision/entities/comision.entity';
 
 describe('MateriaService', () => {
   let service: MateriaService;
+  let mockMateriaRepo: any;
+  let mockPlanEstudioRepo: any;
+  let mockUserRepo: any;
+  let mockInscripcionRepo: any;
+  let mockComisionRepo: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TestDatabaseModule,
-        // Ajusta la lista de entidades según las necesidades reales de MateriaService
-        TypeOrmModule.forFeature([Materia]), // Añade más entidades si es necesario
-        // TypeOrmModule.forFeature([Materia, PlanEstudio, User, Inscripcion]),
+        TypeOrmModule.forFeature([Materia, PlanEstudio, User, Inscripcion, Comision]),
       ],
-      providers: [MateriaService],
+      providers: [
+        MateriaService,
+      ],
     }).compile();
 
     service = module.get<MateriaService>(MateriaService);
+    mockMateriaRepo = module.get(getRepositoryToken(Materia));
+    mockPlanEstudioRepo = module.get(getRepositoryToken(PlanEstudio));
+    mockUserRepo = module.get(getRepositoryToken(User));
+    mockInscripcionRepo = module.get(getRepositoryToken(Inscripcion));
+    mockComisionRepo = module.get(getRepositoryToken(Comision));
   });
 
   it('should be defined', () => {

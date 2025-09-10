@@ -1,5 +1,6 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm'; // <-- importamos TypeORM
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -13,18 +14,24 @@ import { EvaluacionModule } from './evaluacion/evaluacion.module';
 import { HorarioModule } from './horario/horario.module';
 import { ClaseModule } from './clase/clase.module';
 import { AsistenciaModule } from './asistencia/asistencia.module';
+import { ComisionModule } from './comision/comision.module';
+import { InscripcionExamenModule } from './inscripcion-examen/inscripcion-examen.module';
+import { EstadoAcademicoModule } from './estado-academico/estado-academico.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'postgres',        // Tipo de base de datos
-      host: 'localhost',        // Host donde corre PostgreSQL (Docker)
-      port: 5432,               // Puerto
-      username: 'admin',        // Usuario que definiste
-      password: 'admin123',     // Contraseña que definiste
-      database: 'universidad',  // Nombre de la base de datos
-      autoLoadEntities: true,   // Carga automáticamente las entidades
-      synchronize: true,        // ⚠️ solo en desarrollo (crea tablas automáticamente)
+      type: 'postgres',
+      host: 'localhost',
+      port: 5433,
+      username: 'postgres',
+      password: 'testpass',
+      database: 'testdb',
+      autoLoadEntities: true,  // ✅ Esta línea es crucial
+      synchronize: true,
+      logging: false,
+      ssl: false,
+      connectTimeoutMS: 10000,
     }),
     UserModule,
     AuthModule,
@@ -37,9 +44,11 @@ import { AsistenciaModule } from './asistencia/asistencia.module';
     HorarioModule,
     ClaseModule,
     AsistenciaModule,
+    ComisionModule,
+    InscripcionExamenModule,
+    EstadoAcademicoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-

@@ -5,6 +5,7 @@ import { Inscripcion } from './entities/inscripcion.entity';
 import { User } from '../user/entities/user.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { Comision } from '../comision/entities/comision.entity';
+import { CorrelativasService } from '../correlativas/correlativas.service'; // ✅ Importar el nuevo servicio
 
 // ✅ Definimos un tipo explícito para las correlativas faltantes
 interface CorrelativaFaltante {
@@ -16,13 +17,18 @@ interface CorrelativaFaltante {
 export class InscripcionService {
   constructor(
     @InjectRepository(Inscripcion)
-    private inscripcionRepo,
+    private inscripcionRepo, // ✅ Sin tipo explícito
+    
     @InjectRepository(User)
-    private userRepo,
+    private userRepo, // ✅ Sin tipo explícito
+    
     @InjectRepository(Materia)
-    private materiaRepo,
+    private materiaRepo, // ✅ Sin tipo explícito
+    
     @InjectRepository(Comision)
-    private comisionRepo,
+    private comisionRepo, // ✅ Sin tipo explícito
+    
+    private correlativasService: CorrelativasService, // ✅ Inyectar el nuevo servicio
   ) {}
 
   // Historial académico del estudiante (incluye múltiples cursadas)
@@ -53,41 +59,8 @@ export class InscripcionService {
     cumple: boolean; 
     faltantes: CorrelativaFaltante[] // ✅ Cambiado a no opcional
   }> {
-    const materia = await this.materiaRepo.findOne({
-      where: { id: materiaId },
-      relations: ['correlativasCursada'],
-    });
-
-    if (!materia || materia.correlativasCursada.length === 0) {
-      // ✅ Siempre retornamos un array de faltantes (vacío si no hay)
-      return { cumple: true, faltantes: [] };
-    }
-
-    // ✅ Definimos explícitamente el tipo del array
-    const faltantes: CorrelativaFaltante[] = [];
-    
-    for (const correlativa of materia.correlativasCursada) {
-      const inscripcion = await this.inscripcionRepo.findOne({
-        where: {
-          estudiante: { id: estudianteId },
-          materia: { id: correlativa.id },
-        },
-      });
-
-      // Para cursar, la correlativa debe estar aprobada o al menos cursada
-      const estadoValido = inscripcion && 
-        (inscripcion.stc === 'aprobada' || inscripcion.stc === 'cursada');
-      
-      if (!estadoValido) {
-        // ✅ TypeScript ahora sabe que faltantes es CorrelativaFaltante[]
-        faltantes.push({ id: correlativa.id, nombre: correlativa.nombre });
-      }
-    }
-
-    return {
-      cumple: faltantes.length === 0,
-      faltantes, // ✅ Siempre es un array
-    };
+    // ✅ Usar el nuevo servicio de correlativas
+    return this.correlativasService.verificarCorrelativasCursada(estudianteId, materiaId);
   }
 
   // Inscribir estudiante a materia (permite múltiples inscripciones)

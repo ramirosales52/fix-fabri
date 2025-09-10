@@ -12,7 +12,11 @@ async function testConnection() {
     logging: true,
     synchronize: true,
     dropSchema: true,
-    entities: ['src/**/*.entity{.ts,.js}'], // Asegúrate de que esto apunte a tus entidades
+    entities: ['src/**/*.entity{.ts,.js}'],
+    // Añadido para evitar problemas
+    ssl: false,
+    // Añadido para evitar timeout
+    connectTimeoutMS: 10000,
   });
 
   try {
@@ -39,6 +43,7 @@ async function testConnection() {
     console.error('2. Las credenciales son incorrectas');
     console.error('3. El puerto 5433 no está disponible');
     console.error('4. Las entidades no están correctamente definidas');
+    console.error('5. Problemas con el driver de PostgreSQL');
   }
 }
 

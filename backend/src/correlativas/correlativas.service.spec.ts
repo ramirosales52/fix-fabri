@@ -1,35 +1,32 @@
-// src/examen/examen.service.spec.ts
+// src/correlativas/correlativas.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
-import { ExamenService } from './examen.service';
+import { CorrelativasService } from './correlativas.service';
 import { TestDatabaseModule } from '../test-utils/test-database.module';
-import { ExamenFinal } from './entities/examen.entity';
 import { Materia } from '../materia/entities/materia.entity';
-import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
 
-describe('ExamenService', () => {
-  let service: ExamenService;
-  let mockExamenRepo: any;
+describe('CorrelativasService', () => {
+  let service: CorrelativasService;
   let mockMateriaRepo: any;
-  let mockUserRepo: any;
   let mockInscripcionRepo: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TestDatabaseModule,
-        TypeOrmModule.forFeature([ExamenFinal, Materia, User, Inscripcion]),
+        TypeOrmModule.forFeature([
+          Materia, 
+          Inscripcion
+        ]),
       ],
       providers: [
-        ExamenService,
+        CorrelativasService,
       ],
     }).compile();
 
-    service = module.get<ExamenService>(ExamenService);
-    mockExamenRepo = module.get(getRepositoryToken(ExamenFinal));
+    service = module.get<CorrelativasService>(CorrelativasService);
     mockMateriaRepo = module.get(getRepositoryToken(Materia));
-    mockUserRepo = module.get(getRepositoryToken(User));
     mockInscripcionRepo = module.get(getRepositoryToken(Inscripcion));
   });
 

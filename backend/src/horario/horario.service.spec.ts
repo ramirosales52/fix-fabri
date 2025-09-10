@@ -6,6 +6,7 @@ import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Horario } from './entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
+import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
 import { Comision } from '../comision/entities/comision.entity';
 
 describe('HorarioService', () => {
@@ -15,7 +16,7 @@ describe('HorarioService', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TestDatabaseModule,
-        TypeOrmModule.forFeature([Horario, Materia, User, Comision]),
+        TypeOrmModule.forFeature([Horario, Materia, User, Inscripcion, Comision]),
       ],
       providers: [
         HorarioService,

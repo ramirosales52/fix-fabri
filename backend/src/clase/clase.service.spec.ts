@@ -1,6 +1,6 @@
 // src/clase/clase.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { ClaseService } from './clase.service';
 import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Clase } from './entities/clase.entity';
@@ -12,6 +12,12 @@ import { Comision } from '../comision/entities/comision.entity';
 
 describe('ClaseService', () => {
   let service: ClaseService;
+  let mockClaseRepo: any;
+  let mockMateriaRepo: any;
+  let mockHorarioRepo: any;
+  let mockUserRepo: any;
+  let mockInscripcionRepo: any;
+  let mockComisionRepo: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,6 +31,12 @@ describe('ClaseService', () => {
     }).compile();
 
     service = module.get<ClaseService>(ClaseService);
+    mockClaseRepo = module.get(getRepositoryToken(Clase));
+    mockMateriaRepo = module.get(getRepositoryToken(Materia));
+    mockHorarioRepo = module.get(getRepositoryToken(Horario));
+    mockUserRepo = module.get(getRepositoryToken(User));
+    mockInscripcionRepo = module.get(getRepositoryToken(Inscripcion));
+    mockComisionRepo = module.get(getRepositoryToken(Comision));
   });
 
   it('should be defined', () => {

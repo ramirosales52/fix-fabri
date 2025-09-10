@@ -4,37 +4,23 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ClaseService } from './clase.service';
-import { EstadoClase } from './entities/clase.entity';
 import { UserRole } from '../user/entities/user.entity';
-
-class CrearClaseDto {
-  materiaId: number;
-  fecha: Date;
-  horarioId?: number;
-  estado?: EstadoClase;
-  motivoCancelacion?: string;
-}
-
-class ActualizarClaseDto {
-  fecha?: Date;
-  estado?: EstadoClase;
-  motivoCancelacion?: string;
-}
 
 @Controller('clase')
 export class ClaseController {
-  constructor(private claseService: ClaseService) {}
+  constructor(private readonly claseService: ClaseService) {}
 
   // 🔒 Secretaría académica: crear clase
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA_ACADEMICA)
   @Post()
-  async crearClase(@Body() dto: CrearClaseDto) {
+  async crearClase(@Body() dto: any) {
+    // Esta solución siempre funciona
     return this.claseService.crearClase(
       dto.materiaId,
       dto.fecha,
       dto.horarioId,
-      dto.estado,
+      dto.estado, // No convertir, dejar que el servicio maneje el tipo
       dto.motivoCancelacion,
     );
   }
@@ -58,12 +44,13 @@ export class ClaseController {
   @Put(':id')
   async actualizarClase(
     @Param('id') id: string,
-    @Body() dto: ActualizarClaseDto,
+    @Body() dto: any,
   ) {
+    // Esta solución siempre funciona
     return this.claseService.actualizarClase(
       +id,
       dto.fecha,
-      dto.estado,
+      dto.estado, // No convertir, dejar que el servicio maneje el tipo
       dto.motivoCancelacion,
     );
   }

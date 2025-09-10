@@ -1,19 +1,18 @@
 // src/examen/entities/examen.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, Column } from 'typeorm';
 import { Materia } from '../../materia/entities/materia.entity';
 import { User } from '../../user/entities/user.entity';
+import { InscripcionExamen } from '../../inscripcion-examen/entities/inscripcion-examen.entity';
 
 @Entity()
 export class ExamenFinal {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // Corregida la relación con Materia
   @ManyToOne(() => Materia, materia => materia.examenes) 
   @JoinColumn({ name: 'materiaId' })
   materia: Materia;
 
-  // Corregida la relación con User
   @ManyToOne(() => User, user => user.examenes)
   @JoinColumn({ name: 'estudianteId' })
   estudiante: User;
@@ -22,5 +21,8 @@ export class ExamenFinal {
   nota?: number;
 
   @Column({ default: 'inscripto' })
-  estado: string; // inscripto, ausente, aprobado, desaprobado
+  estado: string;
+
+  @OneToMany(() => InscripcionExamen, inscripcion => inscripcion.examen)
+  inscripciones: InscripcionExamen[];
 }
