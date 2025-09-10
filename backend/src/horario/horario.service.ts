@@ -5,7 +5,7 @@ import { Horario, DiaSemana } from './entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
-import { Comision } from '../comision/entities/comision.entity'; // ✅ Importar Comision
+import { Comision } from '../comision/entities/comision.entity';
 
 // ✅ Interfaces para el formato de horario
 export interface HorarioDiario {
@@ -45,7 +45,7 @@ export class HorarioService {
     @InjectRepository(Inscripcion)
     private inscripcionRepo,
     @InjectRepository(Comision)
-    private comisionRepo, // ✅ Añadir repositorio de comisiones
+    private comisionRepo,
   ) {}
 
   async crearHorario(
@@ -54,12 +54,26 @@ export class HorarioService {
     horaInicio: string,
     horaFin: string,
     aula: string,
-    comisionId?: number, // ✅ Añadir comisionId opcional
-    docenteId?: number,   // ✅ Añadir docenteId opcional
+    comisionId?: number,
+    docenteId?: number,
   ): Promise<Horario> {
     const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
     if (!materia) {
       throw new NotFoundException('Materia no encontrada');
+    }
+
+    // ✅ NUEVA FUNCIONALIDAD: Verificar solapamiento de horarios
+    const solapamiento = await this.verificarSolapamiento(
+      materiaId,
+      dia,
+      horaInicio,
+      horaFin,
+      comisionId,
+      docenteId
+    );
+    
+    if (solapamiento) {
+      throw new BadRequestException('Ya existe un horario programado para este día y hora');
     }
 
     // Verificar que la comisión exista si se proporciona
@@ -93,10 +107,40 @@ export class HorarioService {
     return this.horarioRepo.save(horario);
   }
 
+  // ✅ NUEVA FUNCIONALIDAD: Verificar solapamiento de horarios
+  private async verificarSolapamiento(
+    materiaId: number,
+    dia: DiaSemana,
+    horaInicio: string,
+    horaFin: string,
+    comisionId?: number,
+    docenteId?: number,
+  ): Promise<boolean> {
+    const query = this.horarioRepo.createQueryBuilder('horario')
+      .where('horario.dia = :dia', { dia })
+      .andWhere('(horario.horaInicio < :horaFin AND horario.horaFin > :horaInicio)', { 
+        horaInicio, 
+        horaFin 
+      });
+
+    if (comisionId) {
+      query.andWhere('horario.comisionId = :comisionId', { comisionId });
+    } else {
+      query.andWhere('horario.materiaId = :materiaId', { materiaId });
+    }
+
+    if (docenteId) {
+      query.andWhere('horario.docenteId = :docenteId', { docenteId });
+    }
+
+    const solapamiento = await query.getOne();
+    return !!solapamiento;
+  }
+
   async obtenerHorariosPorMateria(materiaId: number): Promise<Horario[]> {
     return this.horarioRepo.find({
       where: { materia: { id: materiaId } },
-      relations: ['comision', 'docente'], // ✅ Incluir relaciones
+      relations: ['comision', 'docente'],
       order: { dia: 'ASC', horaInicio: 'ASC' },
     });
   }
@@ -104,7 +148,7 @@ export class HorarioService {
   async obtenerHorariosPorComision(comisionId: number): Promise<Horario[]> {
     return this.horarioRepo.find({
       where: { comision: { id: comisionId } },
-      relations: ['materia', 'docente'], // ✅ Incluir relaciones
+      relations: ['materia', 'docente'],
       order: { dia: 'ASC', horaInicio: 'ASC' },
     });
   }
@@ -115,15 +159,35 @@ export class HorarioService {
     horaInicio?: string,
     horaFin?: string,
     aula?: string,
-    comisionId?: number | null, // ✅ Añadir comisionId opcional (puede ser null)
-    docenteId?: number | null,   // ✅ Añadir docenteId opcional (puede ser null)
+    comisionId?: number | null,
+    docenteId?: number | null,
   ): Promise<Horario> {
     const horario = await this.horarioRepo.findOne({ 
       where: { id },
-      relations: ['materia'] // ✅ Incluir materia para validación
+      relations: ['materia']
     });
     if (!horario) {
       throw new NotFoundException('Horario no encontrado');
+    }
+
+    // ✅ NUEVA FUNCIONALIDAD: Verificar solapamiento al actualizar
+    if (dia !== undefined || horaInicio !== undefined || horaFin !== undefined) {
+      const nuevoDia = dia !== undefined ? dia : horario.dia;
+      const nuevaHoraInicio = horaInicio !== undefined ? horaInicio : horario.horaInicio;
+      const nuevaHoraFin = horaFin !== undefined ? horaFin : horario.horaFin;
+      
+      const solapamiento = await this.verificarSolapamiento(
+        horario.materia.id,
+        nuevoDia,
+        nuevaHoraInicio,
+        nuevaHoraFin,
+        comisionId !== undefined ? comisionId : horario.comision?.id,
+        docenteId !== undefined ? docenteId : horario.docente?.id
+      );
+      
+      if (solapamiento) {
+        throw new BadRequestException('Ya existe un horario programado para este día y hora');
+      }
     }
 
     // Actualizar campos simples
@@ -170,7 +234,7 @@ export class HorarioService {
     await this.horarioRepo.remove(horario);
   }
 
-  // ✅ NUEVO: Obtener horario personalizado para un usuario
+  // ✅ NUEVA FUNCIONALIDAD: Obtener horario personalizado para un usuario
   async obtenerHorarioPersonal(
     userId: number,
     fechaInicio: Date = new Date(),
@@ -194,15 +258,18 @@ export class HorarioService {
     // Obtener horarios según rol
     if (user.rol === 'estudiante') {
       await this.agregarHorariosEstudiante(userId, horarioSemana);
-    } else {
+    } else if (user.rol === 'profesor') {
       await this.agregarHorariosProfesor(userId, horarioSemana);
+    } else {
+      // Para otros roles (admin, secretaría), mostrar horario general
+      await this.agregarHorariosGeneral(horarioSemana);
     }
 
     return horarioSemana;
   }
 
   private getDiasEntreFechas(fechaInicio: Date, fechaFin: Date): Date[] {
-    const fechas: Date[] = []; // ✅ Tipo explícito
+    const fechas: Date[] = [];
     let currentDate = new Date(fechaInicio);
     
     while (currentDate <= fechaFin) {
@@ -216,7 +283,7 @@ export class HorarioService {
   private getDiaSemana(fecha: Date): DiaSemana {
     const dia = fecha.getDay();
     switch (dia) {
-      case 0: return DiaSemana.DOMINGO; // ✅ Ahora existe en el enum
+      case 0: return DiaSemana.DOMINGO;
       case 1: return DiaSemana.LUNES;
       case 2: return DiaSemana.MARTES;
       case 3: return DiaSemana.MIERCOLES;
@@ -231,7 +298,7 @@ export class HorarioService {
     // Obtener materias en las que está inscripto
     const inscripciones = await this.inscripcionRepo.find({
       where: { estudiante: { id: userId } },
-      relations: ['materia', 'materia.horarios', 'materia.comisiones'], // ✅ Incluir comisiones
+      relations: ['materia', 'materia.horarios', 'materia.comisiones'],
     });
 
     // Para cada día de la semana
@@ -247,7 +314,7 @@ export class HorarioService {
                 nombre: inscripcion.materia.nombre,
                 descripcion: inscripcion.materia.descripcion,
               },
-              comision: horario.comision ? { // ✅ Incluir información de comisión si existe
+              comision: horario.comision ? {
                 id: horario.comision.id,
                 nombre: horario.comision.nombre,
                 descripcion: horario.comision.descripcion,
@@ -300,7 +367,7 @@ export class HorarioService {
     // Obtener materias que dicta
     const materias = await this.materiaRepo.find({
       where: { profesores: { id: userId } },
-      relations: ['horarios', 'comisiones', 'comisiones.horarios'], // ✅ Incluir horarios de comisiones
+      relations: ['horarios', 'comisiones', 'comisiones.horarios'],
     });
 
     // Para cada día de la semana
@@ -316,7 +383,7 @@ export class HorarioService {
                 nombre: materia.nombre,
                 descripcion: materia.descripcion,
               },
-              comision: horario.comision ? { // ✅ Incluir información de comisión si existe
+              comision: horario.comision ? {
                 id: horario.comision.id,
                 nombre: horario.comision.nombre,
                 descripcion: horario.comision.descripcion,
@@ -356,6 +423,45 @@ export class HorarioService {
             }
           });
         });
+      });
+
+      // Ordenar bloques por hora
+      dia.bloques.sort((a, b) => 
+        a.horaInicio.localeCompare(b.horaInicio)
+      );
+    }
+  }
+
+  private async agregarHorariosGeneral(horarioSemana: HorarioDiario[]) {
+    // Para roles administrativos, mostrar todos los horarios
+    const horarios = await this.horarioRepo.find({
+      relations: ['materia', 'comision', 'docente'],
+      order: { dia: 'ASC', horaInicio: 'ASC' },
+    });
+
+    // Agrupar horarios por día
+    for (const dia of horarioSemana) {
+      horarios.forEach(horario => {
+        if (horario.dia === dia.diaSemana) {
+          dia.bloques.push({
+            materia: {
+              id: horario.materia.id,
+              nombre: horario.materia.nombre,
+              descripcion: horario.materia.descripcion,
+            },
+            comision: horario.comision ? {
+              id: horario.comision.id,
+              nombre: horario.comision.nombre,
+              descripcion: horario.comision.descripcion,
+            } : undefined,
+            horaInicio: horario.horaInicio,
+            horaFin: horario.horaFin,
+            aula: horario.aula,
+            esProfesor: false,
+            materiaId: horario.materia.id,
+            comisionId: horario.comision ? horario.comision.id : undefined,
+          });
+        }
       });
 
       // Ordenar bloques por hora
