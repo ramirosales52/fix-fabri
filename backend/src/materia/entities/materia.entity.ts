@@ -7,7 +7,11 @@ import { Evaluacion } from '../../evaluacion/entities/evaluacion.entity';
 import { Horario } from '../../horario/entities/horario.entity';
 import { Clase } from '../../clase/entities/clase.entity';
 import { ExamenFinal } from '../../examen/entities/examen.entity';
-import { Comision } from '../../comision/entities/comision.entity'; // ✅ Importar Comision
+import { ExamenFinal as ExamenFinalNuevo } from '../../examen-final/entities/examen-final.entity';
+import { Comision } from '../../comision/entities/comision.entity';
+import { Departamento } from '../../departamento/entities/departamento.entity';
+import { CorrelativasCursada } from '../../correlativas/entities/correlativas-cursada.entity';
+import { CorrelativasFinal } from '../../correlativas/entities/correlativas-final.entity';
 
 @Entity()
 export class Materia {
@@ -20,10 +24,19 @@ export class Materia {
   @Column({ nullable: true })
   descripcion: string;
 
-  // Relación con PlanEstudio - Verificada
-  @ManyToOne(() => PlanEstudio, (plan) => plan.materias)
-  @JoinColumn({ name: 'planEstudioId' })
-  planEstudio: PlanEstudio;
+  // Relación muchos a muchos con PlanEstudio
+  @ManyToMany(() => PlanEstudio, (plan) => plan.materias)
+  @JoinTable({
+    name: 'materia_planes_estudio',
+    joinColumn: { name: 'materiaId' },
+    inverseJoinColumn: { name: 'planEstudioId' }
+  })
+  planesEstudio: PlanEstudio[];
+
+  // Relación con Departamento - ✅ Añadida (OBLIGATORIA)
+  @ManyToOne(() => Departamento, (departamento) => departamento.materias)
+  @JoinColumn({ name: 'departamentoId' })
+  departamento: Departamento;
 
   // Relación con Inscripciones - Verificada
   @OneToMany(() => Inscripcion, (inscripcion) => inscripcion.materia)
@@ -43,14 +56,12 @@ export class Materia {
   @JoinColumn({ name: 'jefeCatedraId' })
   jefeCatedra?: User;
 
-  // Relaciones de Correlativas - Verificadas
-  @ManyToMany(() => Materia, { cascade: true })
-  @JoinTable({ name: 'correlativas_cursada' })
-  correlativasCursada: Materia[];
+  // Relaciones de Correlativas - Actualizadas
+  @OneToMany(() => CorrelativasCursada, correlativa => correlativa.materia)
+  correlativasCursada: CorrelativasCursada[];
 
-  @ManyToMany(() => Materia, { cascade: true })
-  @JoinTable({ name: 'correlativas_final' })
-  correlativasFinal: Materia[];
+  @OneToMany(() => CorrelativasFinal, correlativa => correlativa.materia)
+  correlativasFinal: CorrelativasFinal[];
 
   // Relación con Evaluaciones - Verificada
   @OneToMany(() => Evaluacion, evaluacion => evaluacion.materia)
@@ -65,8 +76,11 @@ export class Materia {
   clases: Clase[];
   
   // ✅ RELACIÓN AÑADIDA: Exámenes finales de la materia
-  @OneToMany(() => ExamenFinal, examen => examen.materia)
+  @OneToMany(() => ExamenFinal, (examen) => examen.materia)
   examenes: ExamenFinal[];
+
+  @OneToMany(() => ExamenFinalNuevo, (examen) => examen.materia)
+  examenesFinales: ExamenFinalNuevo[];
   
   // ✅ RELACIÓN AÑADIDA: Comisiones de la materia
   @OneToMany(() => Comision, comision => comision.materia)

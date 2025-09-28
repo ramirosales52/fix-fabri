@@ -1,5 +1,7 @@
+// src/carrera/entities/carrera.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { PlanEstudio } from '../../plan-estudio/entities/plan-estudio.entity';
+import { Departamento } from '../../departamento/entities/departamento.entity'; // ✅ Importar Departamento
 
 @Entity()
 export class Carrera {
@@ -12,6 +14,17 @@ export class Carrera {
   @Column({ nullable: true })
   descripcion: string;
 
+  // Relación con planes de estudio
   @OneToMany(() => PlanEstudio, (plan) => plan.carrera)
-  planes: PlanEstudio[];
+  planesEstudio: PlanEstudio[];
+
+  // Relación con departamentos (opcional)
+  @OneToMany(() => Departamento, (departamento) => departamento.carrera)
+  departamentos: Departamento[]; // ✅ Añadida relación con departamentos
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 }

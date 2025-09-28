@@ -6,33 +6,40 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/entities/user.entity';
 import { TestDatabaseModule } from '../test-utils/test-database.module';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { UserRole } from '../user/entities/user.entity';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let mockUserService: Partial<UserService>;
+  let mockJwtService: Partial<JwtService>;
 
   beforeEach(async () => {
+    // Mock de los servicios dependientes
+    mockUserService = {
+      findByEmail: jest.fn(),
+      create: jest.fn(),
+    };
+
+    mockJwtService = {
+      sign: jest.fn().mockReturnValue('test-jwt-token'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TestDatabaseModule,
-        TypeOrmModule.forFeature([User]), // AuthService probablemente no necesite todas las entidades, solo User si lo usa directamente
-         // Si AuthService no usa directamente repositorios de User, puedes omitir TypeOrmModule.forFeature([User])
+        // No necesitamos TypeOrmModule.forFeature([User]) aquí porque AuthService no usa directamente repositorios
       ],
       providers: [
         AuthService,
         {
-          provide: UserService, // Mockea UserService
-          useValue: {
-            findByEmail: jest.fn(),
-            create: jest.fn(),
-            // Mockea otros métodos que AuthService pueda usar
-          },
+          provide: UserService,
+          useValue: mockUserService,
         },
         {
-          provide: JwtService, // Mockea JwtService
-          useValue: {
-            sign: jest.fn().mockReturnValue('test-jwt-token'),
-            // Mockea otros métodos si es necesario
-          },
+          provide: JwtService,
+          useValue: mockJwtService,
         },
       ],
     }).compile();
@@ -42,5 +49,159 @@ describe('AuthService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('register', () => {
+    it('should register a user successfully', async () => {
+      // Arrange
+      const userData: CreateUserDto = {
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email: 'juan.perez@example.com',
+        password: 'password123',
+        legajo: '12345',
+        dni: '12345678',
+        rol: UserRole.ESTUDIANTE,
+      };
+
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      const createdUser: Partial<User> = {
+        id: 1,
+        ...userData,
+        password: hashedPassword,
+        rol: UserRole.ESTUDIANTE,
+      };
+
+      // Mock del servicio de usuario con tipos correctos
+      (mockUserService.create as jest.Mock).mockResolvedValue(createdUser as User);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+      // Act
+      const result = await service.register(userData);
+
+      // Assert
+      expect(result).toEqual(createdUser);
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(mockUserService.create).toHaveBeenCalledWith({
+        ...userData,
+        password: hashedPassword,
+        rol: UserRole.ESTUDIANTE,
+      });
+    });
+
+    it('should register a user with default role if not provided', async () => {
+      // Arrange
+      const userData: CreateUserDto = {
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email: 'juan.perez@example.com',
+        password: 'password123',
+        legajo: '12345',
+        dni: '12345678',
+        rol: undefined, // Sin rol especificado
+      };
+
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      const createdUser: Partial<User> = {
+        id: 1,
+        ...userData,
+        password: hashedPassword,
+        rol: UserRole.ESTUDIANTE, // Debe usar el valor por defecto
+      };
+
+      // Mock del servicio de usuario con tipos correctos
+      (mockUserService.create as jest.Mock).mockResolvedValue(createdUser as User);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+      // Act
+      const result = await service.register(userData);
+
+      // Assert
+      expect(result).toEqual(createdUser);
+      expect(mockUserService.create).toHaveBeenCalledWith({
+        ...userData,
+        password: hashedPassword,
+        rol: UserRole.ESTUDIANTE, // Debe usar el valor por defecto
+      });
+    });
+  });
+
+  describe('login', () => {
+    it('should login successfully and return token', async () => {
+      // Arrange
+      const email = 'juan.perez@example.com';
+      const password = 'password123';
+      const user: Partial<User> = {
+        id: 1,
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email,
+        password: '$2b$10$somehashedpassword', // Password hasheado
+        legajo: '12345',
+        dni: '12345678',
+        rol: UserRole.ESTUDIANTE,
+      };
+
+      // Mock de los servicios con tipos correctos
+      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      // Act
+      const result = await service.login(email, password);
+
+      // Assert
+      expect(result).toEqual({ access_token: 'test-jwt-token' });
+      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: user.id,
+        email: user.email,
+        rol: user.rol,
+      });
+    });
+
+    it('should return null when user is not found', async () => {
+      // Arrange
+      const email = 'juan.perez@example.com';
+      const password = 'password123';
+
+      // Mock de los servicios con tipos correctos
+      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const result = await service.login(email, password);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+    });
+
+    it('should return null when password is invalid', async () => {
+      // Arrange
+      const email = 'juan.perez@example.com';
+      const password = 'wrongpassword';
+      const user: Partial<User> = {
+        id: 1,
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email,
+        password: '$2b$10$somehashedpassword',
+        legajo: '12345',
+        dni: '12345678',
+        rol: UserRole.ESTUDIANTE,
+      };
+
+      // Mock de los servicios con tipos correctos
+      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      // Act
+      const result = await service.login(email, password);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
+    });
   });
 });

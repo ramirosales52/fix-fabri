@@ -1,13 +1,14 @@
 // src/inscripcion/inscripcion.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Inscripcion } from './entities/inscripcion.entity';
 import { User } from '../user/entities/user.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { Comision } from '../comision/entities/comision.entity';
-import { CorrelativasService } from '../correlativas/correlativas.service'; // ✅ Importar el nuevo servicio
+import { CorrelativasService } from '../correlativas/correlativas.service';
+import { Departamento } from '../departamento/entities/departamento.entity';
 
-// ✅ Definimos un tipo explícito para las correlativas faltantes
+// Definimos un tipo explícito para las correlativas faltantes
 interface CorrelativaFaltante {
   id: number;
   nombre: string;
@@ -17,18 +18,21 @@ interface CorrelativaFaltante {
 export class InscripcionService {
   constructor(
     @InjectRepository(Inscripcion)
-    private inscripcionRepo, // ✅ Sin tipo explícito
+    private inscripcionRepo,
     
     @InjectRepository(User)
-    private userRepo, // ✅ Sin tipo explícito
+    private userRepo,
     
     @InjectRepository(Materia)
-    private materiaRepo, // ✅ Sin tipo explícito
+    private materiaRepo,
     
     @InjectRepository(Comision)
-    private comisionRepo, // ✅ Sin tipo explícito
+    private comisionRepo,
     
-    private correlativasService: CorrelativasService, // ✅ Inyectar el nuevo servicio
+    @InjectRepository(Departamento)
+    private departamentoRepo,
+    
+    private correlativasService: CorrelativasService,
   ) {}
 
   // Historial académico del estudiante (incluye múltiples cursadas)
@@ -45,7 +49,7 @@ export class InscripcionService {
     return this.inscripcionRepo.find({
       where: { 
         estudiante: { id: userId },
-        stc: 'cursando' // Solo las que están cursando actualmente
+        stc: 'cursando'
       },
       relations: ['materia', 'comision'],
     });
@@ -57,34 +61,82 @@ export class InscripcionService {
     materiaId: number,
   ): Promise<{ 
     cumple: boolean; 
-    faltantes: CorrelativaFaltante[] // ✅ Cambiado a no opcional
+    faltantes: CorrelativaFaltante[]
   }> {
-    // ✅ Usar el nuevo servicio de correlativas
     return this.correlativasService.verificarCorrelativasCursada(estudianteId, materiaId);
+  }
+
+  // Verificar si el estudiante puede inscribirse a una materia
+  private async verificarInscripcionValida(
+    userId: number,
+    materiaId: number,
+  ): Promise<boolean> {
+    const estudiante = await this.userRepo.findOne({ 
+      where: { id: userId },
+      relations: ['planEstudio', 'planEstudio.carrera']
+    });
+    
+    const materia = await this.materiaRepo.findOne({ 
+      where: { id: materiaId },
+      relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+    });
+
+    if (!estudiante || !materia) {
+      return false;
+    }
+
+    // Verificar si es materia de departamento de básicas (excepción)
+    const departamentoBasica = await this.departamentoRepo.findOne({ 
+      where: { nombre: 'Básicas' } 
+    });
+    
+    if (materia.departamento.id === departamentoBasica?.id) {
+      // Las materias de básicas son accesibles para todos
+      return true;
+    }
+
+    // Verificar que el estudiante esté en el mismo departamento
+    if (estudiante.planEstudio?.carrera?.id !== materia.planEstudio?.carrera?.id) {
+      // Si no es la misma carrera, no puede inscribirse
+      return false;
+    }
+
+    // Si llegamos aquí, la inscripción es válida
+    return true;
   }
 
   // Inscribir estudiante a materia (permite múltiples inscripciones)
   async inscribirse(userId: number, materiaId: number, comisionId?: number): Promise<Inscripcion> {
-    const estudiante = await this.userRepo.findOne({ where: { id: userId } });
-    const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
+    const estudiante = await this.userRepo.findOne({ 
+      where: { id: userId },
+      relations: ['planEstudio', 'planEstudio.carrera']
+    });
+    
+    const materia = await this.materiaRepo.findOne({ 
+      where: { id: materiaId },
+      relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+    });
 
     if (!estudiante || !materia) {
       throw new BadRequestException('Estudiante o materia no encontrados');
     }
 
+    // Verificar que la inscripción sea válida
+    const inscripcionValida = await this.verificarInscripcionValida(userId, materiaId);
+    if (!inscripcionValida) {
+      throw new BadRequestException('No puedes inscribirte a esta materia. No pertenece a tu departamento.');
+    }
+
     // Verificar correlativas de cursada
     const { cumple, faltantes } = await this.verificarCorrelativasCursada(userId, materiaId);
     if (!cumple) {
-      // ✅ Ahora TypeScript sabe que faltantes siempre está definido
       const materiasFaltantes = faltantes.map(m => m.nombre).join(', ');
       throw new BadRequestException(
         `No puedes cursar esta materia. Faltan correlativas de cursada: ${materiasFaltantes}`
       );
     }
 
-    // ✅ Permitir múltiples inscripciones (una por período/cursada)
-    // No hay restricción de inscripción única
-    
+    // Permitir múltiples inscripciones (una por período/cursada)
     const inscripcion = this.inscripcionRepo.create({
       estudiante,
       materia,

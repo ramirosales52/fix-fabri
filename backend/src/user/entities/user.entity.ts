@@ -4,6 +4,7 @@ import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
 import { Materia } from '../../materia/entities/materia.entity';
 import { Evaluacion } from '../../evaluacion/entities/evaluacion.entity';
 import { ExamenFinal } from '../../examen/entities/examen.entity';
+import { ExamenFinal as ExamenFinalNuevo } from '../../examen-final/entities/examen-final.entity';
 import { Horario } from '../../horario/entities/horario.entity';
 import { Clase } from '../../clase/entities/clase.entity';
 import { Asistencia } from '../../asistencia/entities/asistencia.entity';
@@ -53,8 +54,11 @@ export class User {
   @OneToMany(() => Evaluacion, evaluacion => evaluacion.estudiante)
   evaluacionesRecibidas: Evaluacion[];
 
-  @OneToMany(() => ExamenFinal, examen => examen.estudiante)
-  examenes: ExamenFinal[]; // Esta relación parece correcta si ExamenFinal tiene estudianteId
+  @OneToMany(() => ExamenFinal, (examen) => examen.estudiante)
+  examenes: ExamenFinal[];
+
+  @OneToMany(() => ExamenFinalNuevo, (examen) => examen.docente)
+  examenesFinales: ExamenFinalNuevo[];
 
   // Relación con horarios (para profesores) - Corregida
   // Cambiamos de materia a docente para que coincida con Horario

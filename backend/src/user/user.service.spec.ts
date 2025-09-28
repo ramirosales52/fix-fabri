@@ -13,28 +13,29 @@ import { UserRole } from './entities/user.entity';
 describe('UserService', () => {
   let service: UserService;
   let mockUserRepo: any;
-  let mockPlanEstudioService: PlanEstudioService;
+  let mockPlanEstudioService: Partial<PlanEstudioService>;
 
   beforeEach(async () => {
+    mockPlanEstudioService = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TestDatabaseModule,
-        TypeOrmModule.forFeature([User]),
+        TypeOrmModule.forFeature([User, PlanEstudio]),
       ],
       providers: [
         UserService,
         {
           provide: PlanEstudioService,
-          useValue: {
-            findOne: jest.fn(),
-          },
+          useValue: mockPlanEstudioService,
         },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
     mockUserRepo = module.get(getRepositoryToken(User));
-    mockPlanEstudioService = module.get<PlanEstudioService>(PlanEstudioService);
   });
 
   it('should be defined', () => {
@@ -55,7 +56,6 @@ describe('UserService', () => {
         planEstudioId: undefined,
       };
 
-      // Creamos un objeto resultado parcial
       const userResult: any = {
         id: 1,
         nombre: 'Juan',
@@ -68,22 +68,18 @@ describe('UserService', () => {
         planEstudio: undefined,
       };
 
-      // Para el caso donde planEstudioId es undefined, no llamamos a findOne
-      jest.spyOn(mockPlanEstudioService, 'findOne');
-      jest.spyOn(mockUserRepo, 'create').mockImplementation((dto: any) => {
-        // Creamos un objeto básico sin planEstudio
-        return {
-          id: 1,
-          nombre: dto.nombre,
-          apellido: dto.apellido,
-          email: dto.email,
-          password: dto.password,
-          legajo: dto.legajo,
-          dni: dto.dni,
-          rol: dto.rol,
-          planEstudio: undefined
-        };
-      });
+      jest.spyOn(mockPlanEstudioService, 'findOne').mockImplementation(() => Promise.resolve(undefined as any));
+      jest.spyOn(mockUserRepo, 'create').mockImplementation((dto: any) => ({
+        id: 1,
+        nombre: dto.nombre,
+        apellido: dto.apellido,
+        email: dto.email,
+        password: dto.password,
+        legajo: dto.legajo,
+        dni: dto.dni,
+        rol: dto.rol,
+        planEstudio: undefined
+      }));
       jest.spyOn(mockUserRepo, 'save').mockResolvedValue(userResult);
 
       // Act
@@ -109,7 +105,6 @@ describe('UserService', () => {
       };
 
       const mockPlan = { id: 1, nombre: 'Plan Test 1' } as PlanEstudio;
-      // Creamos un objeto resultado parcial
       const userResult: any = {
         id: 1,
         nombre: 'Juan',
@@ -123,27 +118,17 @@ describe('UserService', () => {
       };
 
       jest.spyOn(mockPlanEstudioService, 'findOne').mockResolvedValue(mockPlan);
-      jest.spyOn(mockUserRepo, 'create').mockImplementation((dto: any) => {
-        // Verificamos que dto tenga las propiedades esperadas antes de usarlas
-        if (dto && typeof dto === 'object') {
-          return {
-            id: 1,
-            nombre: dto.nombre,
-            apellido: dto.apellido,
-            email: dto.email,
-            password: dto.password,
-            legajo: dto.legajo,
-            dni: dto.dni,
-            rol: dto.rol,
-            planEstudio: mockPlan
-          };
-        }
-        // Valor por defecto si dto no es válido
-        return {
-          id: 1,
-          planEstudio: mockPlan
-        };
-      });
+      jest.spyOn(mockUserRepo, 'create').mockImplementation((dto: any) => ({
+        id: 1,
+        nombre: dto.nombre,
+        apellido: dto.apellido,
+        email: dto.email,
+        password: dto.password,
+        legajo: dto.legajo,
+        dni: dto.dni,
+        rol: dto.rol,
+        planEstudio: mockPlan
+      }));
       jest.spyOn(mockUserRepo, 'save').mockResolvedValue(userResult);
 
       // Act
@@ -168,7 +153,6 @@ describe('UserService', () => {
         planEstudioId: 1,
       };
 
-      // Mockeamos findOne para que rechace con un error
       jest.spyOn(mockPlanEstudioService, 'findOne').mockRejectedValue(new Error('Plan de estudio no encontrado'));
 
       // Act & Assert
@@ -180,7 +164,6 @@ describe('UserService', () => {
   describe('findByEmail', () => {
     it('should return a user if found', async () => {
       // Arrange
-      // Creamos un objeto resultado parcial
       const userResult: any = {
         id: 1,
         nombre: 'Juan',
@@ -225,7 +208,6 @@ describe('UserService', () => {
   describe('findById', () => {
     it('should return a user if found', async () => {
       // Arrange
-      // Creamos un objeto resultado parcial
       const userResult: any = {
         id: 1,
         nombre: 'Juan',
@@ -270,7 +252,6 @@ describe('UserService', () => {
   describe('findAll', () => {
     it('should return all users', async () => {
       // Arrange
-      // Creamos un array de objetos resultado parciales
       const users: any[] = [{
         id: 1,
         nombre: 'Juan',
@@ -303,10 +284,9 @@ describe('UserService', () => {
         nombre: 'Juan Carlos'
       };
       
-      // Creamos el usuario original (antes de la actualización)
       const originalUser: any = {
         id: 1,
-        nombre: 'Juan', // Nombre original
+        nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
         password: 'password123',
@@ -316,17 +296,12 @@ describe('UserService', () => {
         planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
       };
       
-      // Creamos el usuario esperado después de la actualización
       const expectedUpdatedUser: any = {
         ...originalUser,
-        nombre: 'Juan Carlos', // Nombre actualizado
+        nombre: 'Juan Carlos',
       };
 
-      // Mockeamos findById para que devuelva el usuario actualizado
-      // Esta es la solución clave: siempre devolver el usuario actualizado
       jest.spyOn(service, 'findById').mockResolvedValue(expectedUpdatedUser);
-      
-      // Mockeamos update para que no haga nada (simula éxito)
       jest.spyOn(mockUserRepo, 'update').mockResolvedValue(undefined);
 
       // Act
@@ -336,7 +311,7 @@ describe('UserService', () => {
       expect(result).toEqual(expectedUpdatedUser);
       expect(mockUserRepo.update).toHaveBeenCalledWith(1, {
         nombre: 'Juan Carlos',
-        planEstudio: undefined // Porque no se envió planEstudioId
+        planEstudio: undefined
       });
     });
 
@@ -344,13 +319,12 @@ describe('UserService', () => {
       // Arrange
       const updateDto: UpdateUserDto = {
         nombre: 'Juan Carlos',
-        planEstudioId: 2, // Cambiamos el plan de estudio
+        planEstudioId: 2,
       };
 
-      // Creamos el usuario original (antes de la actualización)
       const originalUser: any = {
         id: 1,
-        nombre: 'Juan', // Nombre original
+        nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
         password: 'password123',
@@ -362,20 +336,14 @@ describe('UserService', () => {
       
       const mockNewPlan = { id: 2, nombre: 'Plan Test 2' } as PlanEstudio;
       
-      // Creamos el usuario esperado después de la actualización
       const expectedUpdatedUser: any = {
         ...originalUser,
-        nombre: 'Juan Carlos', // Nombre actualizado
-        planEstudio: mockNewPlan, // Plan de estudio actualizado
+        nombre: 'Juan Carlos',
+        planEstudio: mockNewPlan,
       };
 
-      // Mockeamos los servicios
       jest.spyOn(mockPlanEstudioService, 'findOne').mockResolvedValue(mockNewPlan);
-      
-      // Mockeamos findById para que devuelva el usuario actualizado
       jest.spyOn(service, 'findById').mockResolvedValue(expectedUpdatedUser);
-      
-      // Mockeamos update para que no haga nada (simula éxito)
       jest.spyOn(mockUserRepo, 'update').mockResolvedValue(undefined);
 
       // Act
@@ -386,7 +354,7 @@ describe('UserService', () => {
       expect(mockPlanEstudioService.findOne).toHaveBeenCalledWith(2);
       expect(mockUserRepo.update).toHaveBeenCalledWith(1, {
         nombre: 'Juan Carlos',
-        planEstudio: mockNewPlan // El nuevo plan de estudio
+        planEstudio: mockNewPlan
       });
     });
   });

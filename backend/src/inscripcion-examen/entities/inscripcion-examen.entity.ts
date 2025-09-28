@@ -1,6 +1,7 @@
 // src/inscripcion-examen/entities/inscripcion-examen.entity.ts
 import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Column } from 'typeorm';
-import { ExamenFinal } from '../../examen/entities/examen.entity';
+import { ExamenFinal as ExamenFinalViejo } from '../../examen/entities/examen.entity';
+import { ExamenFinal } from '../../examen-final/entities/examen-final.entity';
 import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
 
 @Entity()
@@ -12,9 +13,13 @@ export class InscripcionExamen {
   @JoinColumn({ name: 'inscripcionId' })
   inscripcion: Inscripcion;
 
-  @ManyToOne(() => ExamenFinal, examen => examen.inscripciones)
-  @JoinColumn({ name: 'examenId' })
-  examen: ExamenFinal;
+  @ManyToOne(() => ExamenFinalViejo, examen => examen.inscripciones, { eager: true, nullable: true })
+  @JoinColumn({ name: 'examenViejoId' })
+  examenViejo: ExamenFinalViejo;
+
+  @ManyToOne(() => ExamenFinal, examen => examen.inscripciones, { eager: true, nullable: true })
+  @JoinColumn({ name: 'examenFinalId' })
+  examenFinal: ExamenFinal;
 
   @Column({ default: 'inscripto' })
   estado: string;

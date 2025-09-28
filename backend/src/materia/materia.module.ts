@@ -12,6 +12,8 @@ import { Evaluacion } from '../evaluacion/entities/evaluacion.entity';
 import { Horario } from '../horario/entities/horario.entity';
 import { Clase } from '../clase/entities/clase.entity';
 import { ExamenFinal } from '../examen/entities/examen.entity';
+import { Departamento } from '../departamento/entities/departamento.entity';
+import { DepartamentoModule } from '../departamento/departamento.module';
 
 @Module({
   imports: [
@@ -24,8 +26,10 @@ import { ExamenFinal } from '../examen/entities/examen.entity';
       Evaluacion,
       Horario,
       Clase,
-      ExamenFinal
+      ExamenFinal,
+      Departamento // Agregar Departamento aquí
     ]),
+    DepartamentoModule, // Importar el módulo de Departamento
   ],
   providers: [MateriaService],
   controllers: [MateriaController],

@@ -11,6 +11,7 @@ import { Evaluacion } from '../evaluacion/entities/evaluacion.entity';
 import { ExamenFinal } from '../examen/entities/examen.entity';
 import { InscripcionExamen } from '../inscripcion-examen/entities/inscripcion-examen.entity';
 import { CorrelativasModule } from '../correlativas/correlativas.module';
+import { Departamento } from '../departamento/entities/departamento.entity';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { CorrelativasModule } from '../correlativas/correlativas.module';
       Comision, 
       Evaluacion,
       ExamenFinal,
-      InscripcionExamen
+      InscripcionExamen,
+      Departamento // Agregar Departamento aquí
     ]),
     CorrelativasModule,
   ],

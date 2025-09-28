@@ -4,7 +4,7 @@ import { UserService } from '../user/user.service';
 import { User, UserRole } from '../user/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from '../user/dto/create-user.dto' ;
+import { CreateUserDto } from '../user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,11 +15,18 @@ export class AuthService {
 
   // Registro de usuario
   async register(userData: CreateUserDto): Promise<User> {
+    // Verificar que la contraseña exista
+    if (!userData.password) {
+      throw new Error('La contraseña es obligatoria');
+    }
+
+    // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     // Convertir rol a UserRole y poner default 'estudiante'
     const rol: UserRole = userData.rol || UserRole.ESTUDIANTE;
 
+    // Crear el usuario con la contraseña hasheada
     const user = await this.userService.create({
       ...userData,
       password: hashedPassword,
@@ -31,13 +38,24 @@ export class AuthService {
 
   // Login de usuario
   async login(email: string, password: string): Promise<{ access_token: string } | null> {
+    // Buscar usuario por email
     const user = await this.userService.findByEmail(email);
     if (!user) return null;
 
+    // Verificar contraseña
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return null;
 
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
-    return { access_token: this.jwtService.sign(payload) };
+    // Generar token JWT
+    const payload = { 
+      sub: user.id, 
+      email: user.email, 
+      rol: user.rol,
+      legajo: user.legajo
+    };
+    
+    return { 
+      access_token: this.jwtService.sign(payload) 
+    };
   }
 }

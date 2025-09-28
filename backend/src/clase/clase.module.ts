@@ -7,14 +7,16 @@ import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
 import { Comision } from '../comision/entities/comision.entity';
+import { Asistencia } from '../asistencia/entities/asistencia.entity';
 import { ClaseService } from './clase.service';
 import { ClaseController } from './clase.controller';
+import { AsistenciaService } from '../asistencia/asistencia.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Clase, Horario, Materia, User, Inscripcion, Comision]),
+    TypeOrmModule.forFeature([Clase, Horario, Materia, User, Inscripcion, Comision, Asistencia]),
   ],
-  providers: [ClaseService],
+  providers: [ClaseService, AsistenciaService],
   controllers: [ClaseController],
   exports: [ClaseService],
 })

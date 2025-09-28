@@ -2,5 +2,6 @@
 export class CreateMateriaDto {
   nombre: string;
   descripcion?: string;
-  planEstudioId: number;
+  planesEstudioIds: number[]; // Ahora soporta múltiples planes de estudio
+  departamentoId: number; // ✅ Obligatorio
 }

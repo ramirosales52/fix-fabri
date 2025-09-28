@@ -1,12 +1,15 @@
+// src/estado-academico/estado-academico.module.ts
 import { Module } from '@nestjs/common';
-import { EstadoAcademicoController } from './estado-academico.controller';
 import { EstadoAcademicoService } from './estado-academico.service';
+import { EstadoAcademicoController } from './estado-academico.controller';
 import { InscripcionModule } from '../inscripcion/inscripcion.module';
 
 @Module({
-  imports: [InscripcionModule],
-  controllers: [EstadoAcademicoController],
+  imports: [
+    InscripcionModule, // Importamos el módulo de inscripción para usar sus servicios
+  ],
   providers: [EstadoAcademicoService],
-  exports: [EstadoAcademicoService],
+  controllers: [EstadoAcademicoController],
+  exports: [EstadoAcademicoService], // Exportamos para que otros módulos puedan usarlo
 })
 export class EstadoAcademicoModule {}

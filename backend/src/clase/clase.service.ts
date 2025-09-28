@@ -1,12 +1,17 @@
 // src/clase/clase.service.ts
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Between, IsNull, Not } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Clase, EstadoClase } from './entities/clase.entity';
+import { Clase } from './entities/clase.entity';
+import { EstadoClase } from './entities/clase.entity';
 import { Horario } from '../horario/entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
 import { Comision } from '../comision/entities/comision.entity'; // ✅ Importar Comision
+
+// Re-export EstadoClase for use in other modules
+export { EstadoClase } from './entities/clase.entity';
 
 @Injectable()
 export class ClaseService {
@@ -169,5 +174,46 @@ export class ClaseService {
 
   async cancelarClase(id: number, motivo: string): Promise<Clase> {
     return this.actualizarClase(id, undefined, EstadoClase.CANCELADA, motivo);
+  }
+
+  async obtenerClasePorId(id: number): Promise<Clase> {
+    const clase = await this.claseRepo.findOne({
+      where: { id },
+      relations: ['materia', 'horario', 'comision', 'asistencias'],
+    });
+
+    if (!clase) {
+      throw new NotFoundException('Clase no encontrada');
+    }
+
+    return clase;
+  }
+
+  async obtenerClasesPendientesAsistencia(): Promise<Clase[]> {
+    const hoy = new Date();
+    
+    // Obtener clases pasadas o de hoy que no tengan asistencias registradas
+    const clases = await this.claseRepo.find({
+      where: {
+        fecha: Between(
+          new Date('2000-01-01'), // Fecha mínima
+          hoy,
+        ),
+        estado: EstadoClase.PROGRAMADA,
+      },
+      relations: [
+        'materia',
+        'horario',
+        'comision',
+        'comision.docente',
+        'asistencias',
+      ],
+      order: {
+        fecha: 'DESC',
+      },
+    });
+
+    // Filtrar las clases que no tienen asistencias registradas
+    return clases.filter(clase => !clase.asistencias || clase.asistencias.length === 0);
   }
 }

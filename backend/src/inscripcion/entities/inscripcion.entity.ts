@@ -5,6 +5,7 @@ import { Materia } from '../../materia/entities/materia.entity';
 import { Comision } from '../../comision/entities/comision.entity';
 import { Evaluacion } from '../../evaluacion/entities/evaluacion.entity';
 import { InscripcionExamen } from '../../inscripcion-examen/entities/inscripcion-examen.entity';
+import { PlanEstudio } from '../../plan-estudio/entities/plan-estudio.entity';
 
 @Entity()
 export class Inscripcion {
@@ -31,6 +32,10 @@ export class Inscripcion {
 
   @Column({ nullable: true })
   stc: string;
+  
+  @ManyToOne(() => PlanEstudio, { nullable: true })
+  @JoinColumn({ name: 'planEstudioId' })
+  planEstudio?: PlanEstudio;
   
   @CreateDateColumn()
   fechaInscripcion: Date;

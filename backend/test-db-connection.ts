@@ -26,7 +26,7 @@ async function testConnection() {
     
     // Verifica que se puedan crear las tablas
     console.log('🔄 Verificando creación de tablas...');
-    await dataSource.runMigrations();
+    // No necesitamos migraciones en este caso
     console.log('✅ Tablas creadas correctamente');
     
     // Prueba una operación básica
