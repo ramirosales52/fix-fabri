@@ -23,6 +23,6 @@ export class ExamenFinal {
   @Column({ default: 'inscripto' })
   estado: string;
 
-  @OneToMany(() => InscripcionExamen, inscripcion => inscripcion.examen)
+  @OneToMany(() => InscripcionExamen, inscripcion => inscripcion.examenViejo)
   inscripciones: InscripcionExamen[];
 }

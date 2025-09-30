@@ -37,6 +37,14 @@ export class UserService {
     return user ?? undefined;
   }
 
+  async findByLegajo(legajo: string): Promise<User | undefined> {
+    const user = await this.userRepository.findOne({
+      where: { legajo },
+      relations: ['planEstudio'],
+    });
+    return user ?? undefined;
+  }
+
   async findById(id: number): Promise<User | undefined> {
     const user = await this.userRepository.findOne({ 
       where: { id }, 

@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Req, ForbiddenException } from '@nestjs/common';
 import { ExamenFinalService } from './examen-final.service';
 import { CreateExamenFinalDto } from './dto/create-examen-final.dto';
 import { UpdateExamenFinalDto } from './dto/update-examen-final.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { UserRole } from '../user/entities/user.entity';
+import { Request } from 'express';
+import { User } from '../user/entities/user.entity';
 import { ExamenFinalResponseDto } from './dto/examen-final-response.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -16,13 +15,17 @@ export class ExamenFinalController {
   constructor(private readonly examenFinalService: ExamenFinalService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.JEFE_CATEDRA)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Crear un nuevo examen final' })
   @ApiResponse({ status: 201, description: 'Examen final creado exitosamente', type: ExamenFinalResponseDto })
   @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
-  async create(@Body() createExamenFinalDto: CreateExamenFinalDto): Promise<ExamenFinalResponseDto> {
-    return this.examenFinalService.create(createExamenFinalDto);
+  @ApiResponse({ status: 403, description: 'No autorizado: solo el administrador o el jefe de cátedra de la materia pueden crear exámenes finales' })
+  async create(
+    @Body() createExamenFinalDto: CreateExamenFinalDto,
+    @Req() req: Request
+  ): Promise<ExamenFinalResponseDto> {
+    const user = req.user as User;
+    return this.examenFinalService.create(createExamenFinalDto, user);
   }
 
   @Get()
@@ -43,26 +46,32 @@ export class ExamenFinalController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.JEFE_CATEDRA)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Actualizar un examen final' })
   @ApiResponse({ status: 200, description: 'Examen final actualizado', type: ExamenFinalResponseDto })
   @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
+  @ApiResponse({ status: 403, description: 'No autorizado: solo el administrador o el jefe de cátedra de la materia pueden actualizar exámenes finales' })
   @ApiResponse({ status: 404, description: 'Examen final no encontrado' })
   async update(
     @Param('id') id: string,
     @Body() updateExamenFinalDto: UpdateExamenFinalDto,
+    @Req() req: Request
   ): Promise<ExamenFinalResponseDto> {
-    return this.examenFinalService.update(+id, updateExamenFinalDto);
+    const user = req.user as User;
+    return this.examenFinalService.update(+id, updateExamenFinalDto, user);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.JEFE_CATEDRA)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Eliminar un examen final' })
   @ApiResponse({ status: 200, description: 'Examen final eliminado' })
+  @ApiResponse({ status: 403, description: 'No autorizado: solo el administrador o el jefe de cátedra de la materia pueden eliminar exámenes finales' })
   @ApiResponse({ status: 404, description: 'Examen final no encontrado' })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.examenFinalService.remove(+id);
+  async remove(
+    @Param('id') id: string,
+    @Req() req: Request
+  ): Promise<void> {
+    const user = req.user as User;
+    return this.examenFinalService.remove(+id, user);
   }
 }
