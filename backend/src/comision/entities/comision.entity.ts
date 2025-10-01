@@ -1,5 +1,6 @@
 // src/comision/entities/comision.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { Materia } from '../../materia/entities/materia.entity';
 import { User } from '../../user/entities/user.entity';
 import { Horario } from '../../horario/entities/horario.entity';
@@ -40,10 +41,10 @@ export class Comision {
   clases: Clase[];
 
   // Fecha de creación
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
   // Fecha de actualización
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }

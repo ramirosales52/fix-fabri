@@ -1,5 +1,6 @@
 // src/clase/entities/clase.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { Materia } from '../../materia/entities/materia.entity';
 import { Horario } from '../../horario/entities/horario.entity';
 import { Asistencia } from '../../asistencia/entities/asistencia.entity';
@@ -25,21 +26,19 @@ export class Clase {
   @JoinColumn({ name: 'horarioId' })
   horario?: Horario;
 
-  // ✅ RELACIÓN AÑADIDA: Comisión (opcional)
   @ManyToOne(() => Comision, comision => comision.clases, { nullable: true })
   @JoinColumn({ name: 'comisionId' })
   comision?: Comision;
 
-  // Añadida la relación con el docente/profesor
   @ManyToOne(() => User, user => user.clasesDictadas, { nullable: true })
   @JoinColumn({ name: 'docenteId' })
   docente?: User;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: getDateColumnType() })
   fecha: Date;
 
   @Column({ 
-    type: 'enum', 
+    type: 'simple-enum', 
     enum: EstadoClase, 
     default: EstadoClase.PROGRAMADA 
   })

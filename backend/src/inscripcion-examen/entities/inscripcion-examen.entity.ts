@@ -1,5 +1,6 @@
 // src/inscripcion-examen/entities/inscripcion-examen.entity.ts
 import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Column } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { ExamenFinal as ExamenFinalViejo } from '../../examen/entities/examen.entity';
 import { ExamenFinal } from '../../examen-final/entities/examen-final.entity';
 import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
@@ -27,6 +28,6 @@ export class InscripcionExamen {
   @Column({ nullable: true })
   nota?: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP' })
   fechaInscripcion: Date;
 }

@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { Clase } from '../../clase/entities/clase.entity';
 import { User } from '../../user/entities/user.entity';
 
@@ -22,7 +23,7 @@ export class Asistencia {
   estudiante: User;
 
   @Column({ 
-    type: 'enum', 
+    type: 'simple-enum', 
     enum: EstadoAsistencia, 
     default: EstadoAsistencia.AUSENTE 
   })
@@ -31,6 +32,6 @@ export class Asistencia {
   @Column({ nullable: true })
   motivoJustificacion?: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP' })
   fechaRegistro: Date;
 }

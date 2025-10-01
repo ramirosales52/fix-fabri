@@ -58,6 +58,8 @@ describe('CorrelativasService', () => {
     mockCorrelativasCursadaRepo = module.get(
       getRepositoryToken(CorrelativasCursada),
     );
+
+    mockInscripcionRepo.find.mockResolvedValue([]);
   });
 
   it('should be defined', () => {
@@ -96,15 +98,19 @@ describe('CorrelativasService', () => {
       mockMateriaRepo.findOne.mockResolvedValue({
         id: materiaId,
         nombre: 'Álgebra',
-        correlativasCursada: [correlativaRequerida],
+        correlativasCursada: [
+          { correlativa: correlativaRequerida } as unknown as CorrelativasCursada,
+        ],
       } as unknown as Materia);
 
-      // Usamos .mockResolvedValue directamente
-      mockInscripcionRepo.findOne.mockResolvedValue({
-        id: 1,
-        stc: 'aprobada',
-        notaFinal: 8,
-      } as unknown as Inscripcion);
+      mockInscripcionRepo.find.mockResolvedValue([
+        {
+          id: 1,
+          stc: 'aprobada',
+          notaFinal: 8,
+          materia: { id: correlativaRequerida.id, nombre: correlativaRequerida.nombre },
+        } as unknown as Inscripcion,
+      ]);
 
       // Act
       const result = await service.verificarCorrelativasCursada(
@@ -125,11 +131,12 @@ describe('CorrelativasService', () => {
       mockMateriaRepo.findOne.mockResolvedValue({
         id: materiaId,
         nombre: 'Álgebra',
-        correlativasCursada: [correlativaRequerida],
+        correlativasCursada: [
+          { correlativa: correlativaRequerida } as unknown as CorrelativasCursada,
+        ],
       } as unknown as Materia);
 
-      // Usamos .mockResolvedValue directamente
-      mockInscripcionRepo.findOne.mockResolvedValue(null); // No tiene la inscripción
+      mockInscripcionRepo.find.mockResolvedValue([]); // No tiene la inscripción
 
       // Act
       const result = await service.verificarCorrelativasCursada(

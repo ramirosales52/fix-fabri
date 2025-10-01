@@ -1,5 +1,6 @@
 // src/plan-estudio/entities/plan-estudio.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinColumn, JoinTable } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { Carrera } from '../../carrera/entities/carrera.entity';
 import { Materia } from '../../materia/entities/materia.entity';
 import { User } from '../../user/entities/user.entity';
@@ -36,9 +37,9 @@ export class PlanEstudio {
   @OneToMany(() => User, (user) => user.planEstudio)
   estudiantes: User[];
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }

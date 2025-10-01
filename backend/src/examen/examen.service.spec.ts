@@ -411,6 +411,14 @@ describe('ExamenService', () => {
       const nota = 15; // Fuera del rango 0-10
       const estado = 'aprobado';
 
+      jest.spyOn(mockExamenRepo, 'findOne').mockResolvedValue({
+        id: examenId,
+        materia: { id: 1, nombre: 'Álgebra', jefeCatedra: { id: 1 } },
+        estudiante: { id: 1, nombre: 'Juan' },
+        nota: 0,
+        estado: 'inscripto',
+      } as any);
+
       // Act & Assert
       await expect(service.cargarNota(examenId, nota, estado)).rejects.toThrow('La nota debe estar entre 0 y 10');
     });

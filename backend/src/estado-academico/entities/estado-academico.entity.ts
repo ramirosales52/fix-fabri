@@ -24,7 +24,7 @@ export class EstadoAcademico {
   materia: Materia;
 
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: EstadoMateria,
     default: EstadoMateria.NO_CURSADA
   })

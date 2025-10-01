@@ -63,7 +63,13 @@ cd autogestion
 
 ### 2. Configurar la Base de Datos
 
-Crear una base de datos PostgreSQL:
+Si usás Docker, levantá el servicio incluido:
+
+```bash
+docker compose up -d db
+```
+
+Esto crea la base `autogestion` automáticamente. Si preferís hacerlo manualmente:
 
 ```sql
 CREATE DATABASE autogestion;
@@ -79,9 +85,9 @@ Crear archivo `/backend/.env`:
 # Database
 DB_TYPE=postgres
 DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=tu_usuario
-DB_PASSWORD=tu_password
+DB_PORT=5433
+DB_USERNAME=postgres
+DB_PASSWORD=testpass
 DB_DATABASE=autogestion
 
 # JWT
@@ -172,23 +178,18 @@ npm run start
 Una vez iniciado el backend, la documentación de la API está disponible en:
 
 - Swagger UI: http://localhost:3000/api
-- ReDoc: http://localhost:3000/redoc
 
 ## 🔑 Usuarios de Prueba
 
 El sistema incluye usuarios de prueba para cada rol:
 
-| Email | Contraseña | Rol |
-|-------|------------|-----|
-| admin@universidad.edu | admin123 | Administrador |
-| profesor@universidad.edu | prof123 | Profesor |
-| estudiante@universidad.edu | est123 | Estudiante |
+> Los usuarios de prueba pueden crearse ejecutando el script `backend/src/scripts/create-admin.ts` o cargándolos manualmente. Ajustá las credenciales según tu entorno. Recuerda que debes configurar la variable de entorno `DB_PORT` en el archivo `.env` para que coincida con el puerto de tu base de datos.
 
 ## 📁 Estructura del Proyecto
 
 ```
 autogestion/
-├── backend/
+{{ ... }}
 │   ├── src/
 │   │   ├── auth/          # Autenticación y autorización
 │   │   ├── user/          # Gestión de usuarios

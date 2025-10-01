@@ -1,5 +1,6 @@
 // src/evaluacion/entities/evaluacion.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { getDateColumnType } from '../../common/database/date-column.util';
 import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
 import { Materia } from '../../materia/entities/materia.entity';
 import { User } from '../../user/entities/user.entity';
@@ -41,7 +42,7 @@ export class Evaluacion {
   estudiante: User;
 
   // Tipo de evaluación
-  @Column({ type: 'enum', enum: TipoEvaluacion })
+  @Column({ type: 'simple-enum', enum: TipoEvaluacion })
   tipo: TipoEvaluacion;
 
   // Nombre descriptivo
@@ -53,11 +54,11 @@ export class Evaluacion {
   nota?: number;
 
   // Estado
-  @Column({ type: 'enum', enum: EstadoEvaluacion, default: EstadoEvaluacion.PENDIENTE })
+  @Column({ type: 'simple-enum', enum: EstadoEvaluacion, default: EstadoEvaluacion.PENDIENTE })
   estado: EstadoEvaluacion;
 
   // Fecha de la evaluación o carga
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: getDateColumnType(), default: () => 'CURRENT_TIMESTAMP' })
   fecha: Date;
 
   // Observaciones (opcional)

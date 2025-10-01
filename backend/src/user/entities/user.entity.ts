@@ -40,7 +40,7 @@ export class User {
   @Column()
   dni: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.ESTUDIANTE })
+  @Column({ type: 'simple-enum', enum: UserRole, default: UserRole.ESTUDIANTE })
   rol: UserRole;
 
   // Relaciones corregidas

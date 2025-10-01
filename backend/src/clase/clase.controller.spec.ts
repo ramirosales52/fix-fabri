@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClaseController } from './clase.controller';
 import { ClaseService } from './clase.service';
+import { AsistenciaService } from '../asistencia/asistencia.service';
 
 describe('ClaseController', () => {
   let controller: ClaseController;
@@ -14,6 +15,12 @@ describe('ClaseController', () => {
           provide: ClaseService,
           useValue: {
             // Mockea los métodos reales que ClaseController usa
+          },
+        },
+        {
+          provide: AsistenciaService,
+          useValue: {
+            // Mockea los métodos usados de AsistenciaService
           },
         },
       ],

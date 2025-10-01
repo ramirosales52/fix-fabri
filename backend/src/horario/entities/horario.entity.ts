@@ -33,7 +33,7 @@ export class Horario {
   @JoinColumn({ name: 'comisionId' })
   comision?: Comision;
 
-  @Column({ type: 'enum', enum: DiaSemana })
+  @Column({ type: 'simple-enum', enum: DiaSemana })
   dia: DiaSemana;
 
   @Column({ type: 'time' })
