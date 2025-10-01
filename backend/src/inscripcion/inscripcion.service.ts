@@ -78,7 +78,7 @@ export class InscripcionService {
     
     const materia = await this.materiaRepo.findOne({ 
       where: { id: materiaId },
-      relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+      relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
     });
 
     if (!estudiante || !materia) {
@@ -96,7 +96,10 @@ export class InscripcionService {
     }
 
     // Verificar que el estudiante esté en el mismo departamento
-    if (estudiante.planEstudio?.carrera?.id !== materia.planEstudio?.carrera?.id) {
+    const estudianteCarreraId = estudiante.planEstudio?.carrera?.id;
+    const materiaCarrerasIds = materia.planesEstudio?.map(plan => plan.carrera?.id) || [];
+    
+    if (estudianteCarreraId && !materiaCarrerasIds.includes(estudianteCarreraId)) {
       // Si no es la misma carrera, no puede inscribirse
       return false;
     }
@@ -114,7 +117,7 @@ export class InscripcionService {
     
     const materia = await this.materiaRepo.findOne({ 
       where: { id: materiaId },
-      relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+      relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
     });
 
     if (!estudiante || !materia) {

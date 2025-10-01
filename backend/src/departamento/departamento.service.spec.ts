@@ -1,28 +1,35 @@
 // src/departamento/departamento.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { DepartamentoService } from './departamento.service';
-import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Departamento } from './entities/departamento.entity';
-import { Carrera } from '../carrera/entities/carrera.entity';
+import { NotFoundException } from '@nestjs/common';
 
 describe('DepartamentoService', () => {
   let service: DepartamentoService;
   let mockDepartamentoRepo: any;
 
   beforeEach(async () => {
+    // Crear mock del repositorio
+    mockDepartamentoRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([Departamento, Carrera]),
-      ],
       providers: [
         DepartamentoService,
+        {
+          provide: getRepositoryToken(Departamento),
+          useValue: mockDepartamentoRepo,
+        },
       ],
     }).compile();
 
     service = module.get<DepartamentoService>(DepartamentoService);
-    mockDepartamentoRepo = module.get(getRepositoryToken(Departamento));
   });
 
   it('should be defined', () => {
@@ -147,7 +154,10 @@ describe('DepartamentoService', () => {
 
       // Assert
       expect(result).toEqual(updatedDepartamento);
-      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['materias', 'carrera']
+      });
       expect(mockDepartamentoRepo.save).toHaveBeenCalledWith({
         ...existingDepartamento,
         ...updateDto
@@ -166,7 +176,10 @@ describe('DepartamentoService', () => {
 
       // Act & Assert
       await expect(service.update(id, updateDto)).rejects.toThrow('Departamento no encontrado');
-      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['materias', 'carrera']
+      });
     });
   });
 
@@ -189,7 +202,10 @@ describe('DepartamentoService', () => {
       await service.remove(id);
 
       // Assert
-      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['materias', 'carrera']
+      });
       expect(mockDepartamentoRepo.remove).toHaveBeenCalledWith(departamento);
     });
 
@@ -202,7 +218,10 @@ describe('DepartamentoService', () => {
 
       // Act & Assert
       await expect(service.remove(id)).rejects.toThrow('Departamento no encontrado');
-      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
+        where: { id },
+        relations: ['materias', 'carrera']
+      });
     });
   });
 });

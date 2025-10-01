@@ -38,8 +38,7 @@ describe('MateriaController', () => {
     id: 1,
     nombre: 'Plan 2023',
     descripcion: 'Plan de estudios 2023',
-    añoInicio: 2023,
-    añoFin: 2028, // Setting a future year as añoFin
+    año: 2023,
     carrera: mockCarrera,
     materias: [],
     estudiantes: [],
@@ -133,7 +132,7 @@ describe('MateriaController', () => {
       const createMateriaDto: CreateMateriaDto = {
         nombre: 'Matemática',
         descripcion: 'Materia de matemáticas básicas',
-        planEstudioId: 1,
+        planesEstudioIds: [1],
         departamentoId: 1
       };
 
@@ -251,7 +250,7 @@ describe('MateriaController', () => {
       const id = '1';
       const updateMateriaDto: UpdateMateriaDto = {
         nombre: 'Matemática Avanzada',
-        planEstudioId: 1
+        planesEstudioIds: [1]
         // departamentoId is not part of UpdateMateriaDto
       };
 

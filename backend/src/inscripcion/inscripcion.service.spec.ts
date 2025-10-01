@@ -1,17 +1,13 @@
 // src/inscripcion/inscripcion.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { InscripcionService } from './inscripcion.service';
-import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Inscripcion } from './entities/inscripcion.entity';
 import { User } from '../user/entities/user.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { Comision } from '../comision/entities/comision.entity';
-import { Evaluacion } from '../evaluacion/entities/evaluacion.entity';
-import { ExamenFinal } from '../examen/entities/examen.entity';
-import { InscripcionExamen } from '../inscripcion-examen/entities/inscripcion-examen.entity';
-import { CorrelativasService } from '../correlativas/correlativas.service';
 import { Departamento } from '../departamento/entities/departamento.entity';
+import { CorrelativasService } from '../correlativas/correlativas.service';
 
 describe('InscripcionService', () => {
   let service: InscripcionService;
@@ -20,32 +16,60 @@ describe('InscripcionService', () => {
   let mockMateriaRepo: any;
   let mockComisionRepo: any;
   let mockDepartamentoRepo: any;
-  let mockCorrelativasService: Partial<CorrelativasService>;
+  let mockCorrelativasService: any;
 
   beforeEach(async () => {
-    // Aumentar timeout para evitar timeouts
-    jest.setTimeout(15000);
-    
+    // Crear mocks de repositorios
+    mockInscripcionRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+    };
+
+    mockUserRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockMateriaRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockComisionRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockDepartamentoRepo = {
+      findOne: jest.fn(),
+    };
+
     mockCorrelativasService = {
-      verificarCorrelativasCursada: jest.fn()
+      verificarCorrelativasCursada: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([
-          Inscripcion, 
-          User, 
-          Materia, 
-          Comision, 
-          Evaluacion,
-          ExamenFinal,
-          InscripcionExamen,
-          Departamento
-        ]),
-      ],
       providers: [
         InscripcionService,
+        {
+          provide: getRepositoryToken(Inscripcion),
+          useValue: mockInscripcionRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: getRepositoryToken(Materia),
+          useValue: mockMateriaRepo,
+        },
+        {
+          provide: getRepositoryToken(Comision),
+          useValue: mockComisionRepo,
+        },
+        {
+          provide: getRepositoryToken(Departamento),
+          useValue: mockDepartamentoRepo,
+        },
         {
           provide: CorrelativasService,
           useValue: mockCorrelativasService,
@@ -54,11 +78,6 @@ describe('InscripcionService', () => {
     }).compile();
 
     service = module.get<InscripcionService>(InscripcionService);
-    mockInscripcionRepo = module.get(getRepositoryToken(Inscripcion));
-    mockUserRepo = module.get(getRepositoryToken(User));
-    mockMateriaRepo = module.get(getRepositoryToken(Materia));
-    mockComisionRepo = module.get(getRepositoryToken(Comision));
-    mockDepartamentoRepo = module.get(getRepositoryToken(Departamento));
   });
 
   it('should be defined', () => {
@@ -80,7 +99,7 @@ describe('InscripcionService', () => {
       const materia = {
         id: materiaId,
         departamento: { id: 1, nombre: 'Básicas' },
-        planEstudio: { id: 1, carrera: { id: 1 } }
+        planesEstudio: [{ id: 1, carrera: { id: 1 } }]
       };
 
       const departamentoBasica = {
@@ -104,7 +123,7 @@ describe('InscripcionService', () => {
       });
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: materiaId },
-        relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+        relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
       });
       expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
         where: { nombre: 'Básicas' }
@@ -124,7 +143,7 @@ describe('InscripcionService', () => {
       const materia = {
         id: materiaId,
         departamento: { id: 2, nombre: 'Sistemas' },
-        planEstudio: { id: 2, carrera: { id: 2 } }
+        planesEstudio: [{ id: 2, carrera: { id: 2 } }]
       };
 
       const departamentoBasica = {
@@ -148,7 +167,7 @@ describe('InscripcionService', () => {
       });
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: materiaId },
-        relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+        relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
       });
     });
   });
@@ -269,7 +288,7 @@ describe('InscripcionService', () => {
       });
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: materiaId },
-        relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+        relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
       });
       expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
         where: { nombre: 'Básicas' }
@@ -330,7 +349,7 @@ describe('InscripcionService', () => {
       });
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: materiaId },
-        relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+        relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
       });
       expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
         where: { nombre: 'Básicas' }
@@ -367,7 +386,7 @@ describe('InscripcionService', () => {
       });
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: materiaId },
-        relations: ['departamento', 'planEstudio', 'planEstudio.carrera']
+        relations: ['departamento', 'planesEstudio', 'planesEstudio.carrera']
       });
       expect(mockDepartamentoRepo.findOne).toHaveBeenCalledWith({
         where: { nombre: 'Básicas' }

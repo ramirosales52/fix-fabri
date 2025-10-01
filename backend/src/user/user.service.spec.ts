@@ -16,17 +16,27 @@ describe('UserService', () => {
   let mockPlanEstudioService: Partial<PlanEstudioService>;
 
   beforeEach(async () => {
+    // Crear mocks
+    mockUserRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     mockPlanEstudioService = {
       findOne: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([User, PlanEstudio]),
-      ],
       providers: [
         UserService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
         {
           provide: PlanEstudioService,
           useValue: mockPlanEstudioService,
@@ -35,7 +45,6 @@ describe('UserService', () => {
     }).compile();
 
     service = module.get<UserService>(UserService);
-    mockUserRepo = module.get(getRepositoryToken(User));
   });
 
   it('should be defined', () => {

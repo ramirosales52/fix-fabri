@@ -1,8 +1,7 @@
 // src/horario/horario.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { HorarioService } from './horario.service';
-import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Horario } from './entities/horario.entity';
 import { Materia } from '../materia/entities/materia.entity';
 import { User } from '../user/entities/user.entity';
@@ -19,22 +18,59 @@ describe('HorarioService', () => {
   let mockComisionRepo: any;
 
   beforeEach(async () => {
+    // Crear mocks de repositorios
+    mockHorarioRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    mockMateriaRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockUserRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockInscripcionRepo = {
+      find: jest.fn(),
+    };
+
+    mockComisionRepo = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([Horario, Materia, User, Inscripcion, Comision]),
-      ],
       providers: [
         HorarioService,
+        {
+          provide: getRepositoryToken(Horario),
+          useValue: mockHorarioRepo,
+        },
+        {
+          provide: getRepositoryToken(Materia),
+          useValue: mockMateriaRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: getRepositoryToken(Inscripcion),
+          useValue: mockInscripcionRepo,
+        },
+        {
+          provide: getRepositoryToken(Comision),
+          useValue: mockComisionRepo,
+        },
       ],
     }).compile();
 
     service = module.get<HorarioService>(HorarioService);
-    mockHorarioRepo = module.get(getRepositoryToken(Horario));
-    mockMateriaRepo = module.get(getRepositoryToken(Materia));
-    mockUserRepo = module.get(getRepositoryToken(User));
-    mockInscripcionRepo = module.get(getRepositoryToken(Inscripcion));
-    mockComisionRepo = module.get(getRepositoryToken(Comision));
   });
 
   it('should be defined', () => {
@@ -160,11 +196,14 @@ describe('HorarioService', () => {
       const horaInicio = '08:00';
       const horaFin = '10:00';
       
-      // Mock del repositorio
-      jest.spyOn(mockHorarioRepo, 'createQueryBuilder').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'where').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'andWhere').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'getOne').mockResolvedValue(null);
+      // Mock del QueryBuilder
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null)
+      };
+      
+      jest.spyOn(mockHorarioRepo, 'createQueryBuilder').mockReturnValue(mockQueryBuilder);
 
       // Act
       const result = await service['verificarSolapamiento'](
@@ -177,12 +216,12 @@ describe('HorarioService', () => {
       // Assert
       expect(result).toBe(false);
       expect(mockHorarioRepo.createQueryBuilder).toHaveBeenCalledWith('horario');
-      expect(mockHorarioRepo.where).toHaveBeenCalledWith('horario.dia = :dia', { dia });
-      expect(mockHorarioRepo.andWhere).toHaveBeenCalledWith('(horario.horaInicio < :horaFin AND horario.horaFin > :horaInicio)', { 
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('horario.dia = :dia', { dia });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('(horario.horaInicio < :horaFin AND horario.horaFin > :horaInicio)', { 
         horaInicio, 
         horaFin 
       });
-      expect(mockHorarioRepo.getOne).toHaveBeenCalled();
+      expect(mockQueryBuilder.getOne).toHaveBeenCalled();
     });
 
     it('should return true when overlap found', async () => {
@@ -200,11 +239,14 @@ describe('HorarioService', () => {
         horaFin
       };
 
-      // Mock del repositorio
-      jest.spyOn(mockHorarioRepo, 'createQueryBuilder').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'where').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'andWhere').mockReturnThis();
-      jest.spyOn(mockHorarioRepo, 'getOne').mockResolvedValue(existingHorario as any);
+      // Mock del QueryBuilder
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(existingHorario)
+      };
+      
+      jest.spyOn(mockHorarioRepo, 'createQueryBuilder').mockReturnValue(mockQueryBuilder);
 
       // Act
       const result = await service['verificarSolapamiento'](
@@ -217,12 +259,12 @@ describe('HorarioService', () => {
       // Assert
       expect(result).toBe(true);
       expect(mockHorarioRepo.createQueryBuilder).toHaveBeenCalledWith('horario');
-      expect(mockHorarioRepo.where).toHaveBeenCalledWith('horario.dia = :dia', { dia });
-      expect(mockHorarioRepo.andWhere).toHaveBeenCalledWith('(horario.horaInicio < :horaFin AND horario.horaFin > :horaInicio)', { 
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('horario.dia = :dia', { dia });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('(horario.horaInicio < :horaFin AND horario.horaFin > :horaInicio)', { 
         horaInicio, 
         horaFin 
       });
-      expect(mockHorarioRepo.getOne).toHaveBeenCalled();
+      expect(mockQueryBuilder.getOne).toHaveBeenCalled();
     });
   });
 

@@ -16,10 +16,7 @@ export class PlanEstudio {
   descripcion: string;
 
   @Column({ nullable: true })
-  añoInicio: number;
-
-  @Column({ nullable: true })
-  añoFin: number;
+  año: number;
 
   // ✅ CORRECCIÓN: La relación debe apuntar a 'planesEstudio' en Carrera, no a 'planes'
   @ManyToOne(() => Carrera, (carrera) => carrera.planesEstudio) // ✅ Cambiado de 'planes' a 'planesEstudio'

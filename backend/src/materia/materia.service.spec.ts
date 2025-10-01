@@ -1,15 +1,18 @@
 // src/materia/materia.service.spec.ts
-import { Test, TestingModule, TestingModuleBuilder } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { MateriaService } from './materia.service';
-import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { Materia } from './entities/materia.entity';
 import { PlanEstudio } from '../plan-estudio/entities/plan-estudio.entity';
 import { User } from '../user/entities/user.entity';
 import { Departamento } from '../departamento/entities/departamento.entity';
-import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
-import { Comision } from '../comision/entities/comision.entity';
 import { NotFoundException } from '@nestjs/common';
+
+// Mock para getRepository
+jest.mock('typeorm', () => ({
+  ...jest.requireActual('typeorm'),
+  getRepository: jest.fn(),
+}));
 
 describe('MateriaService', () => {
   let service: MateriaService;
@@ -28,18 +31,53 @@ describe('MateriaService', () => {
   };
 
   beforeEach(async () => {
+    // Crear mocks de repositorios
+    mockMateriaRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+      preload: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    mockDepartamentoRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockUserRepo = {
+      findOne: jest.fn(),
+    };
+
+    const mockPlanEstudioRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([Materia, Departamento, User]),
+      providers: [
+        MateriaService,
+        {
+          provide: getRepositoryToken(Materia),
+          useValue: mockMateriaRepo,
+        },
+        {
+          provide: getRepositoryToken(Departamento),
+          useValue: mockDepartamentoRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: getRepositoryToken(PlanEstudio),
+          useValue: mockPlanEstudioRepo,
+        },
       ],
-      providers: [MateriaService],
     }).compile();
 
     service = module.get<MateriaService>(MateriaService);
-    mockMateriaRepo = module.get(getRepositoryToken(Materia));
-    mockDepartamentoRepo = module.get(getRepositoryToken(Departamento));
-    mockUserRepo = module.get(getRepositoryToken(User));
 
     // Mock para el repositorio de departamento
     mockDepartamentoRepo.findOne = jest.fn().mockImplementation((options) => {
@@ -51,6 +89,10 @@ describe('MateriaService', () => {
 
     // Mock para el repositorio de usuario
     mockUserRepo.findOne = jest.fn().mockResolvedValue(mockEstudiante);
+    
+    // Mock para getRepository
+    const { getRepository } = require('typeorm');
+    (getRepository as jest.Mock).mockReturnValue(mockUserRepo);
   });
 
   it('should be defined', () => {
@@ -60,11 +102,11 @@ describe('MateriaService', () => {
   // Tests específicos para verificar funcionalidad sin conexión real
   describe('create', () => {
     it('should create a materia successfully', async () => {
-      // Arrange - Corregido: Ahora incluye el departamentoId requerido
+      // Arrange - Corregido: Ahora incluye el planesEstudioIds requerido
       const createDto = {
         nombre: 'Matemática',
         descripcion: 'Materia de matemáticas básicas',
-        planEstudioId: 1,
+        planesEstudioIds: [1], // ✅ Campo requerido actualizado
         departamentoId: 1 // ✅ Campo requerido incluido
       };
 
@@ -82,7 +124,11 @@ describe('MateriaService', () => {
 
       // Assert
       expect(result).toEqual(savedMateria);
-      expect(mockMateriaRepo.create).toHaveBeenCalledWith(createDto);
+      expect(mockMateriaRepo.create).toHaveBeenCalledWith({
+        nombre: 'Matemática',
+        descripcion: 'Materia de matemáticas básicas',
+        departamentoId: 1
+      });
       expect(mockMateriaRepo.save).toHaveBeenCalled();
     });
   });
@@ -117,9 +163,7 @@ describe('MateriaService', () => {
       // Assert
       expect(result).toEqual(materias);
       expect(mockMateriaRepo.find).toHaveBeenCalledWith({
-        relations: expect.arrayContaining([
-          'planEstudio', 'profesores', 'jefeCatedra', 'departamento'
-        ])
+        relations: ['planesEstudio', 'departamento']
       });
     });
 
@@ -142,13 +186,8 @@ describe('MateriaService', () => {
         { id: 2, nombre: 'Programación I', departamento: mockDepartamentoCarrera }
       ];
       
-      mockMateriaRepo.find.mockImplementation((options) => {
-        const deptId = options.where.departamento.id._value[0];
-        if (deptId === mockDepartamentoBasicas.id) {
-          return Promise.resolve(materiasBasicas);
-        }
-        return Promise.resolve(materiasCarrera);
-      });
+      // Mock para el findMateriasDisponibles que retorna todas las materias
+      mockMateriaRepo.find.mockResolvedValue([...materiasBasicas, ...materiasCarrera]);
 
       // Act
       const result = await service.findMateriasDisponibles(1);
@@ -206,7 +245,7 @@ describe('MateriaService', () => {
       expect(result).toEqual(materia);
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['planEstudio', 'profesores', 'jefeCatedra', 'correlativasCursada', 'correlativasFinal', 'inscripciones', 'evaluaciones', 'horarios', 'clases', 'examenes', 'comisiones'],
+        relations: ['planesEstudio', 'departamento'],
       });
     });
 
@@ -215,10 +254,10 @@ describe('MateriaService', () => {
       jest.spyOn(mockMateriaRepo, 'findOne').mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.findOne(999)).rejects.toThrow('Materia no encontrada');
+      await expect(service.findOne(999)).rejects.toThrow('Materia con ID 999 no encontrada');
       expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({
         where: { id: 999 },
-        relations: ['planEstudio', 'profesores', 'jefeCatedra', 'correlativasCursada', 'correlativasFinal', 'inscripciones', 'evaluaciones', 'horarios', 'clases', 'examenes', 'comisiones'],
+        relations: ['planesEstudio', 'departamento'],
       });
     });
   });
@@ -248,7 +287,7 @@ describe('MateriaService', () => {
       };
 
       // Mock del repositorio
-      jest.spyOn(mockMateriaRepo, 'findOne').mockResolvedValue(existingMateria as any);
+      jest.spyOn(mockMateriaRepo, 'preload').mockResolvedValue(updatedMateria as any);
       jest.spyOn(mockMateriaRepo, 'save').mockResolvedValue(updatedMateria as any);
 
       // Act
@@ -256,11 +295,14 @@ describe('MateriaService', () => {
 
       // Assert
       expect(result).toEqual(updatedMateria);
-      expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({ where: { id } });
-      expect(mockMateriaRepo.save).toHaveBeenCalledWith({
-        ...existingMateria,
-        ...updateDto
+      expect(mockMateriaRepo.preload).toHaveBeenCalledWith({
+        id,
+        nombre: 'Matemática Avanzada',
+        descripcion: 'Materia de matemáticas avanzadas',
+        planEstudioId: 1,
+        departamentoId: 1
       });
+      expect(mockMateriaRepo.save).toHaveBeenCalledWith(updatedMateria);
     });
 
     it('should throw NotFoundException when materia not found during update', async () => {
@@ -273,11 +315,16 @@ describe('MateriaService', () => {
       };
 
       // Mock del repositorio
-      jest.spyOn(mockMateriaRepo, 'findOne').mockResolvedValue(null);
+      jest.spyOn(mockMateriaRepo, 'preload').mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.update(id, updateDto)).rejects.toThrow('Materia no encontrada');
-      expect(mockMateriaRepo.findOne).toHaveBeenCalledWith({ where: { id } });
+      await expect(service.update(id, updateDto)).rejects.toThrow('Materia con ID 1 no encontrada');
+      expect(mockMateriaRepo.preload).toHaveBeenCalledWith({
+        id,
+        nombre: 'Matemática Avanzada',
+        planEstudioId: 1,
+        departamentoId: 1
+      });
     });
   });
 

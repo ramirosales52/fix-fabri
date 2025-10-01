@@ -14,19 +14,34 @@ describe('PlanEstudioService', () => {
   let mockCarreraRepo: any;
 
   beforeEach(async () => {
+    // Crear mocks de repositorios
+    mockPlanRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    mockCarreraRepo = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        TypeOrmModule.forFeature([PlanEstudio, Carrera, Materia, User]),
-      ],
       providers: [
         PlanEstudioService,
+        {
+          provide: getRepositoryToken(PlanEstudio),
+          useValue: mockPlanRepo,
+        },
+        {
+          provide: getRepositoryToken(Carrera),
+          useValue: mockCarreraRepo,
+        },
       ],
     }).compile();
 
     service = module.get<PlanEstudioService>(PlanEstudioService);
-    mockPlanRepo = module.get(getRepositoryToken(PlanEstudio));
-    mockCarreraRepo = module.get(getRepositoryToken(Carrera));
   });
 
   it('should be defined', () => {
@@ -47,9 +62,12 @@ describe('PlanEstudioService', () => {
         id: 1,
         nombre: 'Plan de Ingeniería',
         descripcion: 'Plan de estudios para ingeniería',
+        año: 2023,
         carrera: mockCarrera,
         materias: [],
-        estudiantes: []
+        estudiantes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       } as PlanEstudio;
       
       jest.spyOn(mockCarreraRepo, 'findOne').mockResolvedValue(mockCarrera);
@@ -89,9 +107,12 @@ describe('PlanEstudioService', () => {
         id: 1,
         nombre: 'Plan de Ingeniería',
         descripcion: 'Plan de estudios para ingeniería',
+        año: 2023,
         carrera: { id: 1, nombre: 'Ingeniería' } as Carrera,
         materias: [],
-        estudiantes: []
+        estudiantes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       }] as PlanEstudio[];
       
       jest.spyOn(mockPlanRepo, 'find').mockResolvedValue(mockPlans);
@@ -114,9 +135,12 @@ describe('PlanEstudioService', () => {
         id: 1,
         nombre: 'Plan de Ingeniería',
         descripcion: 'Plan de estudios para ingeniería',
+        año: 2023,
         carrera: { id: 1, nombre: 'Ingeniería' } as Carrera,
         materias: [],
-        estudiantes: []
+        estudiantes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       } as PlanEstudio;
       
       jest.spyOn(mockPlanRepo, 'findOne').mockResolvedValue(mockPlan);
@@ -158,9 +182,12 @@ describe('PlanEstudioService', () => {
         id: 1,
         nombre: 'Plan Original',
         descripcion: 'Descripción original',
+        año: 2023,
         carrera: { id: 1, nombre: 'Ingeniería' } as Carrera,
         materias: [],
-        estudiantes: []
+        estudiantes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       } as PlanEstudio;
       
       const mockCarrera = { id: 1, nombre: 'Ingeniería' } as Carrera;
@@ -189,9 +216,12 @@ describe('PlanEstudioService', () => {
         id: 1,
         nombre: 'Plan Original',
         descripcion: 'Descripción original',
+        año: 2023,
         carrera: { id: 1, nombre: 'Ingeniería' } as Carrera,
         materias: [],
-        estudiantes: []
+        estudiantes: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
       } as PlanEstudio;
       
       const mockCarrera = { id: 2, nombre: 'Ciencias' } as Carrera;

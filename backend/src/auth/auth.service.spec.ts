@@ -10,6 +10,12 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserRole } from '../user/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
+// Mock bcrypt
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(),
+  compare: jest.fn(),
+}));
+
 describe('AuthService', () => {
   let service: AuthService;
   let mockUserService: Partial<UserService>;
@@ -19,6 +25,7 @@ describe('AuthService', () => {
     // Mock de los servicios dependientes
     mockUserService = {
       findByEmail: jest.fn(),
+      findByLegajo: jest.fn(),
       create: jest.fn(),
     };
 
@@ -27,10 +34,6 @@ describe('AuthService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        TestDatabaseModule,
-        // No necesitamos TypeOrmModule.forFeature([User]) aquí porque AuthService no usa directamente repositorios
-      ],
       providers: [
         AuthService,
         {
@@ -74,7 +77,7 @@ describe('AuthService', () => {
 
       // Mock del servicio de usuario con tipos correctos
       (mockUserService.create as jest.Mock).mockResolvedValue(createdUser as User);
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      (bcrypt.hash as any).mockResolvedValue(hashedPassword);
 
       // Act
       const result = await service.register(userData);
@@ -111,7 +114,7 @@ describe('AuthService', () => {
 
       // Mock del servicio de usuario con tipos correctos
       (mockUserService.create as jest.Mock).mockResolvedValue(createdUser as User);
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      (bcrypt.hash as any).mockResolvedValue(hashedPassword);
 
       // Act
       const result = await service.register(userData);
@@ -143,19 +146,31 @@ describe('AuthService', () => {
       };
 
       // Mock de los servicios con tipos correctos
+      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
       (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as any).mockResolvedValue(true);
 
       // Act
       const result = await service.login(email, password);
 
       // Assert
-      expect(result).toEqual({ access_token: 'test-jwt-token' });
+      expect(result).toEqual({ 
+        access_token: 'test-jwt-token',
+        user: {
+          id: 1,
+          nombre: 'Juan',
+          apellido: 'Pérez',
+          email: 'juan.perez@example.com',
+          legajo: '12345',
+          rol: 'estudiante'
+        }
+      });
       expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: user.id,
         email: user.email,
+        legajo: user.legajo,
         rol: user.rol,
       });
     });
@@ -166,6 +181,7 @@ describe('AuthService', () => {
       const password = 'password123';
 
       // Mock de los servicios con tipos correctos
+      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
       (mockUserService.findByEmail as jest.Mock).mockResolvedValue(null);
 
       // Act
@@ -192,8 +208,9 @@ describe('AuthService', () => {
       };
 
       // Mock de los servicios con tipos correctos
+      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
       (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as any).mockResolvedValue(false);
 
       // Act
       const result = await service.login(email, password);

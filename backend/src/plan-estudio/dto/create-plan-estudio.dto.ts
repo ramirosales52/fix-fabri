@@ -1,5 +1,5 @@
 // src/plan-estudio/dto/create-plan-estudio.dto.ts
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreatePlanEstudioDto {
   @IsString()
@@ -9,6 +9,10 @@ export class CreatePlanEstudioDto {
   @IsString()
   @IsOptional()
   descripcion?: string;
+
+  @IsNumber()
+  @IsOptional()
+  año?: number;
 
   @IsNotEmpty()
   carreraId: number;
