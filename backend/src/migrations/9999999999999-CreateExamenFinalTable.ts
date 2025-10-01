@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 export class CreateExamenFinalTable9999999999999 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -135,12 +135,14 @@ export class CreateExamenFinalTable9999999999999 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Eliminar claves foráneas
     const table = await queryRunner.getTable('inscripcion_examen');
-    const examenFinalFk = table.foreignKeys.find(
-      (fk) => fk.columnNames.indexOf('examenFinalId') !== -1,
-    );
-    
-    if (examenFinalFk) {
-      await queryRunner.dropForeignKey('inscripcion_examen', examenFinalFk);
+    if (table) {
+      const examenFinalFk = table.foreignKeys.find(
+        (fk) => fk.columnNames.indexOf('examenFinalId') !== -1,
+      );
+      
+      if (examenFinalFk) {
+        await queryRunner.dropForeignKey('inscripcion_examen', examenFinalFk);
+      }
     }
 
     // Eliminar columnas agregadas

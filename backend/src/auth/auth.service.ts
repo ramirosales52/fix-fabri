@@ -37,9 +37,12 @@ export class AuthService {
   }
 
   // Login de usuario
-  async login(email: string, password: string): Promise<{ access_token: string } | null> {
-    // Buscar usuario por email
-    const user = await this.userService.findByEmail(email);
+  async login(identifier: string, password: string): Promise<{ access_token: string; user: Partial<User> } | null> {
+    // Buscar usuario por legajo primero y luego por email como fallback
+    let user = await this.userService.findByLegajo(identifier);
+    if (!user) {
+      user = await this.userService.findByEmail(identifier);
+    }
     if (!user) return null;
 
     // Verificar contraseña
@@ -53,9 +56,17 @@ export class AuthService {
       rol: user.rol,
       legajo: user.legajo
     };
-    
-    return { 
-      access_token: this.jwtService.sign(payload) 
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        legajo: user.legajo,
+        rol: user.rol,
+      },
     };
   }
 }

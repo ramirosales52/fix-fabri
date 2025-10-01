@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { ExamenFinal } from './entities/examen-final.entity';
@@ -6,15 +6,51 @@ import { CreateExamenFinalDto } from './dto/create-examen-final.dto';
 import { UpdateExamenFinalDto } from './dto/update-examen-final.dto';
 import { ExamenFinalResponseDto } from './dto/examen-final-response.dto';
 import { plainToClass } from 'class-transformer';
+import { User } from '../user/entities/user.entity';
+import { Materia } from '../materia/entities/materia.entity';
 
 @Injectable()
 export class ExamenFinalService {
   constructor(
     @InjectRepository(ExamenFinal)
     private examenFinalRepository: Repository<ExamenFinal>,
+    @InjectRepository(Materia)
+    private materiaRepository: Repository<Materia>,
   ) {}
 
-  async create(createExamenFinalDto: CreateExamenFinalDto): Promise<ExamenFinalResponseDto> {
+  private async checkJefeCatedraOrAdmin(user: User, materiaId: number): Promise<boolean> {
+    // Si el usuario es administrador, tiene permiso
+    if (user.rol === 'admin') {
+      return true;
+    }
+
+    // Buscar la materia y verificar si el usuario es el jefe de cátedra
+    const materia = await this.materiaRepository.findOne({
+      where: { id: materiaId },
+      relations: ['jefeCatedra']
+    });
+
+    if (!materia) {
+      throw new NotFoundException(`Materia con ID ${materiaId} no encontrada`);
+    }
+
+    // Verificar si el usuario es el jefe de cátedra de la materia
+    if (materia.jefeCatedra && materia.jefeCatedra.id === user.id) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async create(
+    createExamenFinalDto: CreateExamenFinalDto,
+    user: User
+  ): Promise<ExamenFinalResponseDto> {
+    // Verificar si el usuario es administrador o jefe de cátedra de la materia
+    const isAuthorized = await this.checkJefeCatedraOrAdmin(user, createExamenFinalDto.materiaId);
+    if (!isAuthorized) {
+      throw new ForbiddenException('No tiene permisos para crear exámenes finales para esta materia');
+    }
     // Validar que si se proporciona hora de inicio práctico, también debe estar la de fin y el aula
     if (
       (createExamenFinalDto.horaInicioPractico && !createExamenFinalDto.horaFinPractico) ||
@@ -34,10 +70,13 @@ export class ExamenFinalService {
     }
 
     // Validar que no haya otro examen en la misma materia en la misma fecha
+    const fechaExamenBusqueda = new Date(createExamenFinalDto.fecha);
+    fechaExamenBusqueda.setHours(0, 0, 0, 0);
+    
     const existeExamen = await this.examenFinalRepository.findOne({
       where: {
         materia: { id: createExamenFinalDto.materiaId },
-        fecha: createExamenFinalDto.fecha,
+        fecha: fechaExamenBusqueda,
       },
     });
 
@@ -64,7 +103,9 @@ export class ExamenFinalService {
   }
 
   async findAll(): Promise<ExamenFinalResponseDto[]> {
-    const hoy = new Date().toISOString().split('T')[0];
+    // Crear una fecha de inicio del día actual a las 00:00:00
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
     
     const examenes = await this.examenFinalRepository.find({
       where: {
@@ -94,13 +135,24 @@ export class ExamenFinalService {
   }
 
   async update(
-    id: number,
+    id: number, 
     updateExamenFinalDto: UpdateExamenFinalDto,
+    user: User
   ): Promise<ExamenFinalResponseDto> {
-    const examen = await this.examenFinalRepository.findOneBy({ id });
-    
+    // Buscar el examen con las relaciones necesarias
+    const examen = await this.examenFinalRepository.findOne({
+      where: { id },
+      relations: ['materia', 'materia.jefeCatedra']
+    });
+
     if (!examen) {
-      throw new NotFoundException(`Examen con ID ${id} no encontrado`);
+      throw new NotFoundException(`Examen final con ID ${id} no encontrado`);
+    }
+
+    // Verificar si el usuario es administrador o jefe de cátedra de la materia
+    const isAuthorized = await this.checkJefeCatedraOrAdmin(user, examen.materia.id);
+    if (!isAuthorized) {
+      throw new ForbiddenException('No tiene permisos para actualizar este examen final');
     }
 
     // Validar que si se actualiza la fecha, no sea en el pasado
@@ -140,7 +192,22 @@ export class ExamenFinalService {
     return this.findOne(id);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, user: User): Promise<void> {
+    const examen = await this.examenFinalRepository.findOne({
+      where: { id },
+      relations: ['materia', 'materia.jefeCatedra']
+    });
+
+    if (!examen) {
+      throw new NotFoundException(`Examen final con ID ${id} no encontrado`);
+    }
+
+    // Verificar si el usuario es administrador o jefe de cátedra de la materia
+    const isAuthorized = await this.checkJefeCatedraOrAdmin(user, examen.materia.id);
+    if (!isAuthorized) {
+      throw new ForbiddenException('No tiene permisos para eliminar este examen final');
+    }
+
     const result = await this.examenFinalRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Examen con ID ${id} no encontrado`);
@@ -151,8 +218,11 @@ export class ExamenFinalService {
     const response = plainToClass(ExamenFinalResponseDto, {
       ...examen,
       fecha: examen.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD
-      disponibles: examen.cupo - examen.inscriptos,
-    }, { excludeExtraneousValues: true });
+      materia: examen.materia?.nombre,
+      materiaId: examen.materia?.id,
+      docente: examen.docente ? `${examen.docente.nombre} ${examen.docente.apellido}` : null,
+      docenteId: examen.docente?.id,
+    });
 
     return response;
   }

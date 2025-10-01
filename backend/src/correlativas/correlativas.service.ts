@@ -181,7 +181,7 @@ export class CorrelativasService {
     }
 
     // Obtener los IDs de las correlativas
-    const correlativaIds = materia.correlativasCursada.map(c => c.correlativaId);
+    const correlativaIds = materia.correlativasCursada.map(c => c.correlativa?.id).filter(Boolean) as number[];
 
     // Obtener las inscripciones del estudiante a las materias correlativas
     const inscripciones = await this.inscripcionRepo.find({
@@ -196,11 +196,11 @@ export class CorrelativasService {
     // Mapear las materias faltantes
     const materiasFaltantes = materia.correlativasCursada
       .filter(correlativa => {
-        const inscripcion = inscripciones.find(i => i.materia.id === correlativa.correlativaId);
+        const inscripcion = inscripciones.find(i => i.materia.id === correlativa.correlativa?.id);
         return !inscripcion || !['aprobada', 'cursada'].includes(inscripcion.stc);
       })
       .map(correlativa => ({
-        id: correlativa.correlativaId,
+        id: correlativa.correlativa?.id || 0,
         nombre: correlativa.correlativa?.nombre || 'Materia desconocida'
       }));
 
@@ -236,7 +236,9 @@ export class CorrelativasService {
     }
 
     // Obtener los IDs de las correlativas
-    const correlativaIds = materia.correlativasFinal.map(c => c.correlativaId);
+    const correlativaIds = materia.correlativasFinal
+      .map(c => c.correlativa?.id)
+      .filter((id): id is number => id !== undefined);
 
     // Obtener las inscripciones del estudiante a las materias correlativas
     const inscripciones = await this.inscripcionRepo.find({
@@ -251,12 +253,12 @@ export class CorrelativasService {
     // Mapear las materias faltantes
     const materiasFaltantes = materia.correlativasFinal
       .filter(correlativa => {
-        const inscripcion = inscripciones.find(i => i.materia.id === correlativa.correlativaId);
+        const inscripcion = inscripciones.find(i => i.materia.id === correlativa.correlativa?.id);
         // Para final, la correlativa debe estar aprobada
         return !inscripcion || inscripcion.stc !== 'aprobada';
       })
       .map(correlativa => ({
-        id: correlativa.correlativaId,
+        id: correlativa.correlativa?.id || 0,
         nombre: correlativa.correlativa?.nombre || 'Materia desconocida'
       }));
 
@@ -295,21 +297,43 @@ export class CorrelativasService {
     }
   }
 
+  /**
+   * Verifica si un estudiante puede inscribirse a una materia
+   * @param estudianteId ID del estudiante
+   * @param materiaId ID de la materia
+   * @returns Objeto con el resultado de la verificación de correlativas de cursada y final
+   */
+  async verificarInscripcionMateria(
+    estudianteId: number, 
+    materiaId: number
+  ): Promise<{
+    cursada: { cumple: boolean; faltantes: Array<{ id: number; nombre: string }> };
+    final: { cumple: boolean; faltantes: Array<{ id: number; nombre: string }> };
+    aprobado: boolean;
+  }> {
+    const cursada = await this.verificarCorrelativasCursada(estudianteId, materiaId);
     const final = await this.verificarCorrelativasFinales(estudianteId, materiaId);
     
     return {
       cursada,
-      final
+      final,
+      aprobado: cursada.cumple && final.cumple
     };
   }
 
   /**
-   * Verificación más completa para inscripción a examen final
+   * Verifica la inscripción a un examen final
+   * @param estudianteId ID del estudiante
+   * @param inscripcionId ID de la inscripción al examen
+   * @returns Resultado de la verificación
    */
-  async verificarInscripcionExamenFinal(estudianteId: number, inscripcionId: number): Promise<{
+  async verificarInscripcionExamenFinal(
+    estudianteId: number,
+    inscripcionId: number
+  ): Promise<{
     cumple: boolean;
     mensaje: string;
-    faltantes?: { id: number; nombre: string }[];
+    faltantes?: Array<{ id: number; nombre: string }>;
   }> {
     // Obtener la inscripción
     const inscripcion = await this.inscripcionRepo.findOne({
@@ -355,6 +379,17 @@ export class CorrelativasService {
     return {
       cumple: true,
       mensaje: 'Correlativas verificadas correctamente'
+    };
+  }
+
+  async verificarTodasCorrelativas(estudianteId: number, materiaId: number) {
+    const cursada = await this.verificarCorrelativasCursada(estudianteId, materiaId);
+    const final = await this.verificarCorrelativasFinales(estudianteId, materiaId);
+    
+    return {
+      cursada,
+      final,
+      aprobado: cursada.cumple && final.cumple,
     };
   }
 }

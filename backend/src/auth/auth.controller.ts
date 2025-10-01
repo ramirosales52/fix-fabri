@@ -14,8 +14,8 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body: { email: string; password: string }) {
-    const token = await this.authService.login(body.email, body.password);
+  async login(@Body() body: { legajo: string; password: string }) {
+    const token = await this.authService.login(body.legajo, body.password);
     if (!token) return { error: 'Credenciales inválidas' };
     return token;
   }
