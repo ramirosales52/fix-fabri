@@ -7,6 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getApiUrl(endpoint: string): string {
   // Use environment variable if set, otherwise default to local development URL
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-  return `${baseUrl}/${endpoint}`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  return `${baseUrl.replace(/\/$/, '')}/${endpoint}`;
 }

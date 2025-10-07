@@ -31,10 +31,24 @@ import { toast } from '@/components/ui/use-toast';
 interface Materia {
   id: number;
   nombre: string;
-  descripcion: string;
-  comisiones: Comision[];
-  correlativasCursada: Materia[];
-  correlativasFinal: Materia[];
+  descripcion?: string;
+  comisiones?: Comision[];
+  correlativasCursada?: Array<{
+    id: number;
+    correlativa?: {
+      id: number;
+      nombre: string;
+    };
+    nombre?: string;
+  }>;
+  correlativasFinal?: Array<{
+    id: number;
+    correlativa?: {
+      id: number;
+      nombre: string;
+    };
+    nombre?: string;
+  }>;
 }
 
 interface Comision {
@@ -46,7 +60,13 @@ interface Comision {
     nombre: string;
     apellido: string;
   };
-  horarios: Horario[];
+  profesor?: {
+    nombre: string;
+    apellido: string;
+  };
+  horarios?: Horario[];
+  inscripciones?: Array<{ id: number }>;
+  cupo?: number;
 }
 
 interface Horario {
@@ -59,8 +79,9 @@ interface Horario {
 interface Inscripcion {
   id: number;
   materia: Materia;
-  comision: Comision;
-  estado: string;
+  comision?: Comision;
+  estado?: string;
+  stc?: string;
   fechaInscripcion: string;
 }
 
@@ -80,8 +101,8 @@ export default function InscripcionesPage() {
   const fetchData = async () => {
     try {
       const [materiasRes, inscripcionesRes] = await Promise.all([
-        api.get('/materias/disponibles'),
-        api.get('/inscripciones/mis-inscripciones')
+        api.get('/materia/disponibles'),
+        api.get('/inscripcion/cursando')
       ]);
       setMateriasDisponibles(materiasRes.data);
       setMisInscripciones(inscripcionesRes.data);
@@ -103,10 +124,11 @@ export default function InscripcionesPage() {
     }
 
     try {
-      await api.post('/inscripciones', {
-        materiaId: selectedMateria.id,
-        comisionId: parseInt(selectedComision),
-      });
+      const payload = Number.isFinite(parseInt(selectedComision, 10))
+        ? { comisionId: parseInt(selectedComision, 10) }
+        : {};
+
+      await api.post(`/inscripcion/materia/${selectedMateria.id}`, payload);
       
       toast({
         title: "Éxito",
@@ -128,7 +150,7 @@ export default function InscripcionesPage() {
 
   const handleCancelarInscripcion = async (inscripcionId: number) => {
     try {
-      await api.delete(`/inscripciones/${inscripcionId}`);
+      await api.delete(`/inscripcion/${inscripcionId}`);
       
       toast({
         title: "Éxito",
@@ -149,17 +171,69 @@ export default function InscripcionesPage() {
     materia.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getEstadoBadge = (estado: string) => {
+  const getEstadoBadge = (inscripcion: Inscripcion) => {
+    const estado = (inscripcion.estado || inscripcion.stc || '').toUpperCase();
     switch (estado) {
       case 'CONFIRMADA':
+      case 'CURSANDO':
         return <Badge className="bg-green-100 text-green-800">Confirmada</Badge>;
       case 'PENDIENTE':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendiente</Badge>;
       case 'RECHAZADA':
         return <Badge className="bg-red-100 text-red-800">Rechazada</Badge>;
+      case 'FINALIZADA':
+      case 'APROBADA':
+        return <Badge className="bg-blue-100 text-blue-800">{estado.charAt(0) + estado.slice(1).toLowerCase()}</Badge>;
       default:
-        return <Badge>{estado}</Badge>;
+        return estado ? <Badge>{estado}</Badge> : <Badge variant="outline">Sin estado</Badge>;
     }
+  };
+
+  const renderComisionDocente = (comision?: Comision) => {
+    const docente = comision?.docente ?? comision?.profesor;
+    if (!docente) return null;
+
+    return (
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-gray-400" />
+        <span>
+          Prof. {docente.nombre} {docente.apellido}
+        </span>
+      </div>
+    );
+  };
+
+  const getCorrelativasNombres = (
+    correlativas?: Array<{ correlativa?: { nombre: string }; nombre?: string }>,
+  ) => {
+    return (correlativas ?? [])
+      .map((item) => item?.correlativa?.nombre || item?.nombre)
+      .filter((nombre): nombre is string => Boolean(nombre));
+  };
+
+  const formatCupo = (comision: Comision) => {
+    if (
+      typeof comision.cupoDisponible === 'number' &&
+      typeof comision.cupoMaximo === 'number'
+    ) {
+      return `${comision.cupoDisponible}/${comision.cupoMaximo}`;
+    }
+
+    if (typeof comision.cupo === 'number') {
+      const usados = comision.inscripciones?.length ?? 0;
+      return `${usados}/${comision.cupo}`;
+    }
+
+    if (comision.inscripciones) {
+      return `${comision.inscripciones.length} inscriptos`;
+    }
+
+    return 'Cupo no disponible';
+  };
+
+  const canCancelInscripcion = (inscripcion: Inscripcion) => {
+    const estado = (inscripcion.estado || inscripcion.stc || '').toUpperCase();
+    return estado === 'PENDIENTE' || estado === 'CURSANDO';
   };
 
   return (
@@ -182,12 +256,12 @@ export default function InscripcionesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Mis Inscripciones */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Mis Inscripciones Actuales</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Mis Inscripciones Actuales</h2>
           {misInscripciones.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
                 <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No tienes inscripciones activas</p>
+                <p className="text-gray-600">No tienes inscripciones activas</p>
               </CardContent>
             </Card>
           ) : (
@@ -198,22 +272,15 @@ export default function InscripcionesPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">{inscripcion.materia.nombre}</CardTitle>
-                        <CardDescription>{inscripcion.comision.nombre}</CardDescription>
+                        <CardDescription>{inscripcion.comision?.nombre || 'Sin comisión asignada'}</CardDescription>
                       </div>
-                      {getEstadoBadge(inscripcion.estado)}
+                      {getEstadoBadge(inscripcion)}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm">
-                      {inscripcion.comision.docente && (
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-gray-400" />
-                          <span>
-                            Prof. {inscripcion.comision.docente.nombre} {inscripcion.comision.docente.apellido}
-                          </span>
-                        </div>
-                      )}
-                      {inscripcion.comision.horarios.map((horario, idx) => (
+                      {renderComisionDocente(inscripcion.comision)}
+                      {inscripcion.comision?.horarios?.map((horario, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-gray-400" />
                           <span>
@@ -228,7 +295,7 @@ export default function InscripcionesPage() {
                         </span>
                       </div>
                     </div>
-                    {inscripcion.estado === 'PENDIENTE' && (
+                    {canCancelInscripcion(inscripcion) && (
                       <Button
                         variant="destructive"
                         size="sm"
@@ -249,7 +316,7 @@ export default function InscripcionesPage() {
         {/* Materias Disponibles */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Materias Disponibles</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Materias Disponibles</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -276,27 +343,32 @@ export default function InscripcionesPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {materia.correlativasCursada.length > 0 && (
-                        <div className="text-sm">
-                          <span className="font-medium">Correlativas cursada:</span>
-                          <ul className="ml-4 mt-1">
-                            {materia.correlativasCursada.map((corr) => (
-                              <li key={corr.id} className="text-gray-600">• {corr.nombre}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      {(() => {
+                        const correlativas = getCorrelativasNombres(materia.correlativasCursada);
+                        if (correlativas.length === 0) return null;
+                        return (
+                          <div className="text-sm">
+                            <span className="font-medium">Correlativas cursada:</span>
+                            <ul className="ml-4 mt-1">
+                              {correlativas.map((nombre, index) => (
+                                <li key={`${materia.id}-corr-${index}`} className="text-gray-600">• {nombre}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()}
                       <div className="text-sm">
                         <span className="font-medium">Comisiones disponibles:</span>
                         <div className="mt-1 space-y-1">
-                          {materia.comisiones.map((comision) => (
+                          {(materia.comisiones ?? []).map((comision) => (
                             <div key={comision.id} className="flex justify-between items-center">
                               <span className="text-gray-600">{comision.nombre}</span>
-                              <Badge variant="secondary">
-                                {comision.cupoDisponible}/{comision.cupoMaximo}
-                              </Badge>
+                              <Badge variant="secondary">{formatCupo(comision)}</Badge>
                             </div>
                           ))}
+                          {(materia.comisiones ?? []).length === 0 && (
+                            <p className="text-gray-500">Sin comisiones cargadas</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -321,10 +393,10 @@ export default function InscripcionesPage() {
       {/* Modal de Inscripción */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md text-gray-900">
             <CardHeader>
-              <CardTitle>Nueva Inscripción</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900">Nueva Inscripción</CardTitle>
+              <CardDescription className="text-gray-700">
                 {selectedMateria ? `Inscribirse a ${selectedMateria.nombre}` : 'Selecciona una materia y comisión'}
               </CardDescription>
             </CardHeader>
@@ -332,43 +404,43 @@ export default function InscripcionesPage() {
               <div className="space-y-4">
                 {!selectedMateria ? (
                   <div>
-                    <Label>Materia</Label>
+                    <Label className="text-gray-800">Materia</Label>
                     <Select onValueChange={(value) => {
                       const materia = materiasDisponibles.find(m => m.id === parseInt(value));
                       setSelectedMateria(materia || null);
                     }}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-gray-900 placeholder:text-gray-500">
                         <SelectValue placeholder="Selecciona una materia" />
                       </SelectTrigger>
                       <SelectContent>
-                        {materiasDisponibles.map((materia) => (
-                          <SelectItem key={materia.id} value={materia.id.toString()}>
-                            {materia.nombre}
-                          </SelectItem>
-                        ))}
+                          {materiasDisponibles.map((materia) => (
+                            <SelectItem key={materia.id} value={materia.id.toString()}>
+                              {materia.nombre}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                 ) : (
                   <>
                     <div>
-                      <Label>Materia seleccionada</Label>
-                      <p className="text-sm font-medium mt-1">{selectedMateria.nombre}</p>
+                      <Label className="text-gray-800">Materia seleccionada</Label>
+                      <p className="text-sm font-medium mt-1 text-gray-900">{selectedMateria.nombre}</p>
                     </div>
                     <div>
-                      <Label>Comisión</Label>
+                      <Label className="text-gray-800">Comisión</Label>
                       <Select value={selectedComision} onValueChange={setSelectedComision}>
-                        <SelectTrigger>
+                        <SelectTrigger className="text-gray-900 placeholder:text-gray-500">
                           <SelectValue placeholder="Selecciona una comisión" />
                         </SelectTrigger>
                         <SelectContent>
-                          {selectedMateria.comisiones.map((comision) => (
-                            <SelectItem 
-                              key={comision.id} 
+                          {(selectedMateria.comisiones ?? []).map((comision) => (
+                            <SelectItem
+                              key={comision.id}
                               value={comision.id.toString()}
-                              disabled={comision.cupoDisponible === 0}
+                              disabled={typeof comision.cupoDisponible === 'number' && comision.cupoDisponible === 0}
                             >
-                              {comision.nombre} ({comision.cupoDisponible}/{comision.cupoMaximo} disponibles)
+                              {comision.nombre} ({formatCupo(comision)})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -378,8 +450,8 @@ export default function InscripcionesPage() {
                       <div className="bg-blue-50 p-3 rounded-md">
                         <p className="text-sm font-medium text-blue-900 mb-2">Horarios:</p>
                         {selectedMateria.comisiones
-                          .find(c => c.id === parseInt(selectedComision))
-                          ?.horarios.map((horario, idx) => (
+                          ?.find((c) => c.id === parseInt(selectedComision, 10))
+                          ?.horarios?.map((horario, idx) => (
                             <p key={idx} className="text-sm text-blue-700">
                               {horario.dia} {horario.horaInicio} - {horario.horaFin} (Aula {horario.aula})
                             </p>

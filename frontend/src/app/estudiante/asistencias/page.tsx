@@ -175,7 +175,7 @@ export default function MisAsistenciasPage() {
 
             <TabsContent value={activeTab}>
               {filtrarAsistencias().length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-600">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No se encontraron asistencias</p>
                 </div>
@@ -190,7 +190,7 @@ export default function MisAsistenciasPage() {
                         <div>
                           <h3 className="font-medium">{asistencia.materia?.nombre || 'Materia no disponible'}</h3>
                           {asistencia.fecha && (
-                            <div className="flex items-center mt-1 text-sm text-gray-500">
+                            <div className="flex items-center mt-1 text-sm text-gray-600">
                               <Clock className="h-4 w-4 mr-1" />
                               {format(parseISO(asistencia.fecha), 'PPP', { locale: es })}
                             </div>

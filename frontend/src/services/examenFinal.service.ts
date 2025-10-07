@@ -145,6 +145,6 @@ export const ExamenFinalService = {
 
   // Cancelar inscripción a un examen final
   async cancelarInscripcion(inscripcionId: number): Promise<void> {
-    await axios.delete(`${API_URL}/inscripciones/${inscripcioncionId}`);
+    await axios.delete(`${API_URL}/inscripciones/${inscripcionId}`);
   }
 };

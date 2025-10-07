@@ -17,10 +17,19 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 
+interface MateriaComision {
+  id: number;
+  nombre: string;
+  cupoDisponible?: number;
+  cupoMaximo?: number;
+  cupo?: number;
+  inscripciones?: Array<{ id: number }>;
+}
+
 interface Materia {
   id: number;
   nombre: string;
-  descripcion: string;
+  descripcion?: string;
   departamento?: {
     nombre: string;
   };
@@ -28,12 +37,7 @@ interface Materia {
     nombre: string;
     apellido: string;
   }>;
-  comisiones?: Array<{
-    id: number;
-    nombre: string;
-    cupoDisponible: number;
-    cupoMaximo: number;
-  }>;
+  comisiones?: MateriaComision[];
   horarios?: Array<{
     dia: string;
     horaInicio: string;
@@ -54,7 +58,7 @@ export default function MateriasPage() {
 
   const fetchMaterias = async () => {
     try {
-      const response = await api.get('/materias');
+      const response = await api.get('/materia');
       setMaterias(response.data);
     } catch (error) {
       console.error('Error al cargar materias:', error);
@@ -80,6 +84,26 @@ export default function MateriasPage() {
     return days[day] || day;
   };
 
+  const formatCupo = (comision: MateriaComision) => {
+    if (
+      typeof comision.cupoDisponible === 'number' &&
+      typeof comision.cupoMaximo === 'number'
+    ) {
+      return `${comision.cupoDisponible}/${comision.cupoMaximo}`;
+    }
+
+    if (typeof comision.cupo === 'number') {
+      const inscriptos = comision.inscripciones?.length ?? 0;
+      return `${inscriptos}/${comision.cupo}`;
+    }
+
+    if (comision.inscripciones) {
+      return `${comision.inscripciones.length} inscriptos`;
+    }
+
+    return 'Cupo no disponible';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
@@ -100,8 +124,8 @@ export default function MateriasPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
+              <Button variant="outline" className="text-gray-900 border-gray-300 hover:bg-gray-100">
+                <Filter className="h-4 w-4 mr-2 text-gray-600" />
                 Filtros
               </Button>
             </div>
@@ -152,7 +176,7 @@ export default function MateriasPage() {
                       <div className="flex flex-wrap gap-2">
                         {materia.comisiones.map((comision) => (
                           <Badge key={comision.id} variant="secondary">
-                            {comision.nombre} ({comision.cupoDisponible}/{comision.cupoMaximo})
+                            {comision.nombre} ({formatCupo(comision)})
                           </Badge>
                         ))}
                       </div>
@@ -169,7 +193,7 @@ export default function MateriasPage() {
                           </div>
                         ))}
                         {materia.horarios.length > 2 && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-600">
                             +{materia.horarios.length - 2} horarios más
                           </span>
                         )}
@@ -197,7 +221,7 @@ export default function MateriasPage() {
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900">No se encontraron materias</h3>
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-600 mt-2">
               Intenta ajustar tu búsqueda o filtros
             </p>
           </div>

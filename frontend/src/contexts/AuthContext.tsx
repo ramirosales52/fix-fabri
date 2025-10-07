@@ -47,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         STORAGE_KEY,
         JSON.stringify({ token: access_token, user: nextUser })
       );
+      // Mantener compatibilidad con otros servicios que leen estas claves
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(nextUser));
     }
   };
 
@@ -55,6 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   };
 

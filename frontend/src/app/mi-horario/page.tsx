@@ -8,8 +8,8 @@ import { Calendar, Clock, MapPin, User, Download, ChevronLeft, ChevronRight } fr
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-interface Horario {
-  id: number;
+interface HorarioPlano {
+  id: string;
   dia: string;
   horaInicio: string;
   horaFin: string;
@@ -18,7 +18,7 @@ interface Horario {
     id: number;
     nombre: string;
   };
-  comision: {
+  comision?: {
     id: number;
     nombre: string;
     docente?: {
@@ -26,6 +26,31 @@ interface Horario {
       apellido: string;
     };
   };
+}
+
+interface HorarioServidorBloque {
+  materia?: {
+    id: number;
+    nombre: string;
+    descripcion?: string;
+  };
+  comision?: {
+    id: number;
+    nombre: string;
+    descripcion?: string;
+  };
+  horaInicio: string;
+  horaFin: string;
+  aula: string;
+  esProfesor: boolean;
+  materiaId?: number;
+  comisionId?: number;
+}
+
+interface HorarioServidorDia {
+  fecha: string;
+  diaSemana: string;
+  bloques: HorarioServidorBloque[];
 }
 
 const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -42,8 +67,40 @@ const COLORES_MATERIAS = [
   'bg-orange-100 text-orange-800 border-orange-300',
 ];
 
+const normalizarHorarios = (dias: HorarioServidorDia[]): HorarioPlano[] => {
+  const resultado: HorarioPlano[] = [];
+
+  dias.forEach((dia) => {
+    dia.bloques.forEach((bloque, index) => {
+      const materia = bloque.materia || {
+        id: bloque.materiaId ?? -1,
+        nombre: bloque.materia?.nombre || 'Materia sin nombre',
+      };
+
+      const comision = bloque.comision
+        ? {
+            id: bloque.comision.id,
+            nombre: bloque.comision.nombre,
+          }
+        : undefined;
+
+      resultado.push({
+        id: `${dia.fecha}-${index}`,
+        dia: dia.diaSemana,
+        horaInicio: bloque.horaInicio,
+        horaFin: bloque.horaFin,
+        aula: bloque.aula,
+        materia,
+        comision,
+      });
+    });
+  });
+
+  return resultado;
+};
+
 export default function MiHorarioPage() {
-  const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [horarios, setHorarios] = useState<HorarioPlano[]>([]);
   const [loading, setLoading] = useState(true);
   const [vistaMovil, setVistaMovil] = useState(false);
   const [diaSeleccionado, setDiaSeleccionado] = useState(0);
@@ -66,9 +123,10 @@ export default function MiHorarioPage() {
 
   const fetchHorarios = async () => {
     try {
-      const response = await api.get('/horarios/mis-horarios');
-      setHorarios(response.data);
-      asignarColores(response.data);
+      const response = await api.get<HorarioServidorDia[]>('/horario/mi-horario');
+      const planos = normalizarHorarios(response.data);
+      setHorarios(planos);
+      asignarColores(planos);
     } catch (error) {
       console.error('Error al cargar horarios:', error);
     } finally {
@@ -76,7 +134,7 @@ export default function MiHorarioPage() {
     }
   };
 
-  const asignarColores = (horarios: Horario[]) => {
+  const asignarColores = (horarios: HorarioPlano[]) => {
     const materias = new Map<number, string>();
     const materiasUnicas = [...new Set(horarios.map(h => h.materia.id))];
     
@@ -89,8 +147,13 @@ export default function MiHorarioPage() {
 
   const getHorarioPorDiaYHora = (dia: string, hora: string) => {
     return horarios.find(h => {
-      const horaInicio = parseInt(h.horaInicio.split(':')[0]);
-      const horaFin = parseInt(h.horaFin.split(':')[0]);
+      const [horaInicioStr] = h.horaInicio.split(':');
+      const [horaFinStr] = h.horaFin.split(':');
+      if (!horaInicioStr || !horaFinStr) {
+        return false;
+      }
+      const horaInicio = parseInt(horaInicioStr, 10);
+      const horaFin = parseInt(horaFinStr, 10);
       const horaActual = parseInt(hora.split(':')[0]);
       return h.dia === dia && horaActual >= horaInicio && horaActual < horaFin;
     });
@@ -182,7 +245,9 @@ export default function MiHorarioPage() {
                   >
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg">{horario.materia.nombre}</CardTitle>
-                      <CardDescription>{horario.comision.nombre}</CardDescription>
+                      {horario.comision && (
+                        <CardDescription>{horario.comision.nombre}</CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
@@ -193,7 +258,7 @@ export default function MiHorarioPage() {
                         <MapPin className="h-4 w-4" />
                         <span>Aula {horario.aula}</span>
                       </div>
-                      {horario.comision.docente && (
+                      {horario.comision?.docente && (
                         <div className="flex items-center gap-2 text-sm">
                           <User className="h-4 w-4" />
                           <span>
@@ -208,7 +273,7 @@ export default function MiHorarioPage() {
                 <Card>
                   <CardContent className="text-center py-8">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No tienes clases este día</p>
+                    <p className="text-gray-600">No tienes clases este día</p>
                   </CardContent>
                 </Card>
               )}
@@ -273,7 +338,7 @@ export default function MiHorarioPage() {
                                       <Clock className="h-3 w-3" />
                                       <span>{horario.horaInicio} - {horario.horaFin}</span>
                                     </div>
-                                    {horario.comision.docente && (
+                                    {horario.comision?.docente && (
                                       <div className="flex items-center gap-1">
                                         <User className="h-3 w-3" />
                                         <span className="truncate">

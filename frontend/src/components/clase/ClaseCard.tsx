@@ -99,15 +99,15 @@ export function ClaseCard({
             
             <div className="mt-3 space-y-1 text-sm">
               <div className="flex items-center text-gray-700">
-                <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                <Calendar className="h-4 w-4 mr-2 text-gray-600" />
                 {format(fechaClase, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
               </div>
               <div className="flex items-center text-gray-700">
-                <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                <Clock className="h-4 w-4 mr-2 text-gray-600" />
                 {horaInicio} - {horaFin}
               </div>
               <div className="flex items-center text-gray-700">
-                <Users className="h-4 w-4 mr-2 text-gray-500" />
+                <Users className="h-4 w-4 mr-2 text-gray-600" />
                 {presentes} / {totalEstudiantes} estudiantes
                 {asistenciaTomada && (
                   <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
@@ -118,7 +118,7 @@ export function ClaseCard({
               <div className="flex items-center text-gray-700">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 mr-2 text-gray-500" 
+                  className="h-4 w-4 mr-2 text-gray-600" 
                   fill="none" 
                   viewBox="0 0 24 24" 
                   stroke="currentColor"
@@ -135,7 +135,7 @@ export function ClaseCard({
               <div className="flex items-center text-gray-700">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 mr-2 text-gray-500" 
+                  className="h-4 w-4 mr-2 text-gray-600" 
                   fill="none" 
                   viewBox="0 0 24 24" 
                   stroke="currentColor"
@@ -153,7 +153,7 @@ export function ClaseCard({
                 <div className="flex items-center text-gray-700">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
-                    className="h-4 w-4 mr-2 text-gray-500" 
+                    className="h-4 w-4 mr-2 text-gray-600" 
                     fill="none" 
                     viewBox="0 0 24 24" 
                     stroke="currentColor"
@@ -172,7 +172,7 @@ export function ClaseCard({
                 <div className="flex items-center text-gray-700">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
-                    className="h-4 w-4 mr-2 text-gray-500" 
+                    className="h-4 w-4 mr-2 text-gray-600" 
                     fill="none" 
                     viewBox="0 0 24 24" 
                     stroke="currentColor"
@@ -239,7 +239,7 @@ export function ClaseCard({
             )}
             
             {esFutura && (
-              <div className="text-xs text-gray-500 text-right">
+              <div className="text-xs text-gray-600 text-right">
                 {format(fechaClase, "d 'de' MMM", { locale: es })}
               </div>
             )}

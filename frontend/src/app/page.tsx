@@ -9,10 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
-  email: z.string().email('Correo electrónico inválido').min(1, 'El correo es requerido'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  identifier: z
+    .string()
+    .min(1, 'Ingresa tu legajo o correo electrónico'),
+  password: z
+    .string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -21,6 +26,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { login } = useAuth();
 
   const {
     register,
@@ -29,7 +35,7 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      identifier: '',
       password: '',
     },
   });
@@ -39,28 +45,14 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Aquí irá la lógica de autenticación con el backend
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error en la autenticación');
-      }
-
-      const responseData = await response.json();
-      // Guardar el token y redirigir al dashboard
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', responseData.token);
-      }
+      await login(data.identifier, data.password);
       router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Error al iniciar sesión';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +75,11 @@ export default function LoginPage() {
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -95,8 +91,11 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <Label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Correo electrónico
+                <Label
+                  htmlFor="identifier"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Legajo o correo electrónico
                 </Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -106,45 +105,67 @@ export default function LoginPage() {
                     </svg>
                   </div>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="ejemplo@dominio.com"
-                    className={`pl-10 w-full ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
-                    {...register('email')}
+                    id="identifier"
+                    type="text"
+                    placeholder="ejemplo@dominio.com o EST001"
+                    className={`pl-10 w-full ${
+                      errors.identifier
+                        ? 'border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    } focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                    {...register('identifier')}
                     disabled={isLoading}
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
+                {errors.identifier && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.identifier.message}
+                  </p>
                 )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <Label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
                     Contraseña
                   </Label>
-                  <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                  <a
+                    href="#"
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  >
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    className={`pl-10 w-full ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                    className={`pl-10 w-full ${
+                      errors.password
+                        ? 'border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    } focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
                     {...register('password')}
                     disabled={isLoading}
                   />
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
@@ -172,7 +193,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                     ¿No tienes una cuenta?
                   </span>
                 </div>
@@ -191,7 +212,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-4 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               © {new Date().getFullYear()} Sistema de Autogestión. Todos los derechos reservados.
             </p>
           </div>

@@ -7,7 +7,7 @@ export default function ExamenesPage() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Exámenes Finales</h1>
-        <p className="text-muted-foreground">
+        <p className="text-gray-600">
           Gestiona tus inscripciones a exámenes finales
         </p>
       </div>

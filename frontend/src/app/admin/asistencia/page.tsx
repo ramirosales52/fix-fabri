@@ -343,7 +343,7 @@ const GestionAsistenciaPage = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setSelectedClase(null)}
-                className="text-gray-500 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900"
               >
                 <XCircle className="h-5 w-5" />
               </Button>
@@ -400,7 +400,7 @@ const GestionAsistenciaPage = () => {
                     ))}
                   </div>
                 ) : filteredEstudiantes.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-600">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p>No se encontraron estudiantes</p>
                   </div>
@@ -408,10 +408,10 @@ const GestionAsistenciaPage = () => {
                   <table className="w-full">
                     <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                           Estudiante
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider w-40">
                           Asistencia
                         </th>
                       </tr>
@@ -425,7 +425,7 @@ const GestionAsistenciaPage = () => {
                                 <div className="text-sm font-medium text-gray-900">
                                   {estudiante.estudiante.apellido}, {estudiante.estudiante.nombre}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-gray-600">
                                   {estudiante.estudiante.dni}
                                 </div>
                               </div>
@@ -543,7 +543,7 @@ const GestionAsistenciaPage = () => {
             <Card className="p-8 text-center">
               <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">No hay clases pendientes</h3>
-              <p className="text-gray-500">No se encontraron clases que requieran la toma de asistencia.</p>
+              <p className="text-gray-600">No se encontraron clases que requieran la toma de asistencia.</p>
             </Card>
           ) : (
             <div className="space-y-4">
@@ -593,7 +593,7 @@ const GestionAsistenciaPage = () => {
                   ))}
                   
                 {!loading && clases.filter(clase => clase.asistenciaTomada).length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-600">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p>No hay registro de asistencia en el historial</p>
                   </div>

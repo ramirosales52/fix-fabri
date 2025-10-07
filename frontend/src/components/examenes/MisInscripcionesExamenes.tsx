@@ -94,7 +94,7 @@ export function MisInscripcionesExamenes() {
       <div className="text-center py-12">
         <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-lg font-medium text-gray-900">No tienes inscripciones a exámenes</h3>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-600">
           No estás inscripto a ningún examen final en este momento.
         </p>
       </div>
@@ -141,7 +141,7 @@ export function MisInscripcionesExamenes() {
                     <CardTitle className="text-lg">{examen.materia.nombre}</CardTitle>
                     <div className="flex items-center mt-1 space-x-2">
                       {getEstadoBadge(inscripcion.estado)}
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-gray-600">
                         Inscrito el {format(new Date(inscripcion.fechaInscripcion), 'dd/MM/yyyy')}
                       </span>
                     </div>
@@ -150,7 +150,7 @@ export function MisInscripcionesExamenes() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                  <Calendar className="h-4 w-4 mr-2 text-gray-600 flex-shrink-0" />
                   <span className="font-medium">{formatDate(examen.fecha)}</span>
                 </div>
                 
@@ -162,13 +162,13 @@ export function MisInscripcionesExamenes() {
                   </div>
                   <div className="space-y-2 pl-6">
                     <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Clock className="mr-2 h-4 w-4 text-gray-600" />
                       <span>
                         {formatTime(examen.teorico.horaInicio)} - {formatTime(examen.teorico.horaFin)}
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Users className="mr-2 h-4 w-4 text-gray-600" />
                       <span>Aula {examen.teorico.aula}</span>
                     </div>
                   </div>
@@ -183,13 +183,13 @@ export function MisInscripcionesExamenes() {
                     </div>
                     <div className="space-y-2 pl-6">
                       <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <Clock className="mr-2 h-4 w-4 text-gray-600" />
                         <span>
                           {formatTime(examen.practico.horaInicio)} - {formatTime(examen.practico.horaFin)}
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <Users className="mr-2 h-4 w-4 text-gray-600" />
                         <span>Aula {examen.practico.aula}</span>
                       </div>
                     </div>
@@ -198,7 +198,7 @@ export function MisInscripcionesExamenes() {
                 
                 {/* Información del docente */}
                 <div className="flex items-center text-sm">
-                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <User className="h-4 w-4 mr-2 text-gray-600" />
                   <span className="font-medium">Docente:</span>
                   <span className="ml-1">{examen.docente.nombre} {examen.docente.apellido}</span>
                 </div>

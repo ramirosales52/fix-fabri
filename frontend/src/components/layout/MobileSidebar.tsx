@@ -180,8 +180,8 @@ export function MobileSidebar() {
           <div className="border-t p-4">
             <div className="mb-4 px-3">
               <p className="text-sm font-medium">{user?.nombre} {user?.apellido}</p>
-              <p className="text-xs text-gray-500">{user?.email}</p>
-              <p className="text-xs text-gray-500 capitalize mt-1">
+              <p className="text-xs text-gray-600">{user?.email}</p>
+              <p className="text-xs text-gray-600 capitalize mt-1">
                 {user?.rol?.replace('_', ' ')}
               </p>
             </div>

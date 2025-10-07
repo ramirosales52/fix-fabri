@@ -154,7 +154,7 @@ export function AsistenciaModal({
             <p className="text-gray-600">
               {clase.materia.nombre} - {clase.comision.nombre}
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
                 {format(new Date(clase.fecha), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
@@ -187,7 +187,7 @@ export function AsistenciaModal({
           
           <button 
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-1 -m-1"
+            className="text-gray-600 hover:text-gray-700 p-1 -m-1"
             disabled={loading}
           >
             <X className="h-6 w-6" />
@@ -244,7 +244,7 @@ export function AsistenciaModal({
         <ScrollArea className="flex-1">
           <div className="divide-y">
             {estudiantesFiltrados.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-600">
                 <AlertCircle className="h-8 w-8 mx-auto mb-2" />
                 <p>No se encontraron estudiantes</p>
               </div>
@@ -261,7 +261,7 @@ export function AsistenciaModal({
                           <h4 className="font-medium">
                             {estudiante.estudiante.apellido}, {estudiante.estudiante.nombre}
                           </h4>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-600">
                             DNI: {estudiante.estudiante.dni}
                           </p>
                         </div>

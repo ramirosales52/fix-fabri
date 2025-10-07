@@ -294,7 +294,7 @@ export function AdminExamenesFinales() {
       {/* Filtros y búsqueda */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
           <Input
             placeholder="Buscar por materia, docente, aula o fecha..."
             className="pl-9"
@@ -318,11 +318,11 @@ export function AdminExamenesFinales() {
       {/* Lista de exámenes */}
       {examenesFiltrados.length === 0 ? (
         <div className="text-center py-12 border border-dashed rounded-lg">
-          <Book className="mx-auto h-12 w-12 text-muted-foreground" />
+          <Book className="mx-auto h-12 w-12 text-gray-600" />
           <h3 className="mt-2 text-lg font-medium text-gray-900">
             {searchTerm ? 'No se encontraron exámenes' : 'No hay exámenes programados'}
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-gray-600">
             {searchTerm 
               ? 'Intenta con otros términos de búsqueda.' 
               : 'Crea un nuevo examen para comenzar.'}
@@ -350,7 +350,7 @@ export function AdminExamenesFinales() {
                         <Badge variant={esPasado ? 'outline' : 'default'}>
                           {esPasado ? 'Finalizado' : 'Pendiente'}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-gray-600">
                           {examen.inscriptos} / {examen.cupo} cupos
                         </span>
                       </div>
@@ -376,7 +376,7 @@ export function AdminExamenesFinales() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                    <Calendar className="h-4 w-4 mr-2 text-gray-600 flex-shrink-0" />
                     <span className="font-medium">{formatDate(examen.fecha)}</span>
                   </div>
                   
@@ -388,13 +388,13 @@ export function AdminExamenesFinales() {
                     </div>
                     <div className="space-y-2 pl-6">
                       <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <Clock className="mr-2 h-4 w-4 text-gray-600" />
                         <span>
                           {formatTime(examen.teorico.horaInicio)} - {formatTime(examen.teorico.horaFin)}
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <Users className="mr-2 h-4 w-4 text-gray-600" />
                         <span>Aula {examen.teorico.aula}</span>
                       </div>
                     </div>
@@ -409,13 +409,13 @@ export function AdminExamenesFinales() {
                       </div>
                       <div className="space-y-2 pl-6">
                         <div className="flex items-center">
-                          <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <Clock className="mr-2 h-4 w-4 text-gray-600" />
                           <span>
                             {formatTime(examen.practico.horaInicio)} - {formatTime(examen.practico.horaFin)}
                           </span>
                         </div>
                         <div className="flex items-center">
-                          <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <Users className="mr-2 h-4 w-4 text-gray-600" />
                           <span>Aula {examen.practico.aula}</span>
                         </div>
                       </div>
@@ -424,7 +424,7 @@ export function AdminExamenesFinales() {
                   
                   {/* Información del docente */}
                   <div className="flex items-center text-sm">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <User className="h-4 w-4 mr-2 text-gray-600" />
                     <span className="font-medium">Docente:</span>
                     <span className="ml-1">{examen.docente.nombre} {examen.docente.apellido}</span>
                   </div>
@@ -663,7 +663,7 @@ export function AdminExamenesFinales() {
           </DialogHeader>
           
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-600">
               Esta acción no se puede deshacer. Se eliminarán todas las inscripciones asociadas a este examen.
             </p>
             {examenAEliminar && (
@@ -672,7 +672,7 @@ export function AdminExamenesFinales() {
                 <p className="text-sm">
                   {formatDate(examenAEliminar.fecha)} - {formatTime(examenAEliminar.teorico.horaInicio)}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-600">
                   {examenAEliminar.inscriptos} estudiantes inscriptos
                 </p>
               </div>

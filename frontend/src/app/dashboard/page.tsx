@@ -120,11 +120,15 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-600">
                 Legajo: {user?.legajo}
               </span>
-              <Button variant="outline" size="sm">
-                <Clock className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-gray-700 border-gray-300 bg-white hover:bg-gray-100"
+              >
+                <Clock className="h-4 w-4 mr-2 text-gray-600" />
                 {new Date().toLocaleDateString('es-AR')}
               </Button>
             </div>
@@ -138,14 +142,14 @@ export default function DashboardPage() {
           {statsCards.map((stat, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+                <CardTitle className="text-sm font-semibold text-gray-800">
                   {stat.title}
                 </CardTitle>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
+                <p className="text-xs text-gray-600">
                   {stat.description}
                 </p>
               </CardContent>
@@ -155,7 +159,7 @@ export default function DashboardPage() {
 
         {/* Acciones Rápidas */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
               <Link href={action.href} key={index}>
@@ -164,8 +168,8 @@ export default function DashboardPage() {
                     <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mb-3`}>
                       <action.icon className="h-6 w-6 text-white" />
                     </div>
-                    <CardTitle className="text-lg">{action.title}</CardTitle>
-                    <CardDescription>{action.description}</CardDescription>
+                <CardTitle className="text-lg text-gray-900">{action.title}</CardTitle>
+                <CardDescription className="text-sm text-gray-600">{action.description}</CardDescription>
                   </CardHeader>
                 </Card>
               </Link>
@@ -177,11 +181,11 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Actividad Reciente</CardTitle>
-              <CardDescription>Últimas acciones en el sistema</CardDescription>
+              <CardTitle className="text-gray-900">Actividad Reciente</CardTitle>
+              <CardDescription className="text-gray-600">Últimas acciones en el sistema</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 text-gray-800">
                 {[
                   { action: 'Inscripción a Matemática II', time: 'Hace 2 horas', type: 'success' },
                   { action: 'Asistencia registrada - Física I', time: 'Hace 5 horas', type: 'info' },
@@ -190,8 +194,8 @@ export default function DashboardPage() {
                 ].map((item, index) => (
                   <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{item.action}</p>
-                      <p className="text-xs text-gray-500">{item.time}</p>
+                      <p className="text-sm font-medium text-gray-900">{item.action}</p>
+                      <p className="text-xs text-gray-600">{item.time}</p>
                     </div>
                     <div className={`w-2 h-2 rounded-full ${
                       item.type === 'success' ? 'bg-green-500' :
@@ -206,11 +210,11 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Próximos Eventos</CardTitle>
-              <CardDescription>Tu agenda para los próximos días</CardDescription>
+              <CardTitle className="text-gray-900">Próximos Eventos</CardTitle>
+              <CardDescription className="text-gray-600">Tu agenda para los próximos días</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 text-gray-800">
                 {[
                   { event: 'Parcial - Álgebra Lineal', date: '25 Sep', time: '14:00' },
                   { event: 'Entrega TP - Base de Datos', date: '27 Sep', time: '23:59' },
@@ -219,8 +223,8 @@ export default function DashboardPage() {
                 ].map((item, index) => (
                   <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{item.event}</p>
-                      <p className="text-xs text-gray-500">{item.date} - {item.time}</p>
+                      <p className="text-sm font-medium text-gray-900">{item.event}</p>
+                      <p className="text-xs text-gray-600">{item.date} - {item.time}</p>
                     </div>
                     <Calendar className="h-4 w-4 text-gray-400" />
                   </div>

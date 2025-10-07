@@ -85,7 +85,7 @@ export function ExamenFinalList() {
       <div className="text-center py-12">
         <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-lg font-medium text-gray-900">No hay exámenes disponibles</h3>
-        <p className="mt-1 text-sm text-gray-500">No se encontraron exámenes finales para inscribirse en este momento.</p>
+        <p className="mt-1 text-sm text-gray-600">No se encontraron exámenes finales para inscribirse en este momento.</p>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export function ExamenFinalList() {
                   {examen.inscriptos}/{examen.cupo} {examen.disponibles > 0 ? 'cupos' : 'sin cupo'}
                 </Badge>
               </div>
-              <div className="flex items-center text-sm text-muted-foreground mt-1">
+              <div className="flex items-center text-sm text-gray-600 mt-1">
                 <User className="mr-1 h-4 w-4" />
                 {`${examen.docente.nombre} ${examen.docente.apellido}`}
               </div>
@@ -121,7 +121,7 @@ export function ExamenFinalList() {
             <CardContent className="flex-1">
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Calendar className="mr-2 h-4 w-4 text-gray-600 flex-shrink-0" />
                   <span className="font-medium">
                     {format(new Date(examen.fecha), 'PPP', { locale: es })}
                   </span>
@@ -131,15 +131,15 @@ export function ExamenFinalList() {
                 <div className="bg-muted/50 p-3 rounded-lg">
                   <div className="flex items-center text-sm font-medium mb-2">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Calendar className="h-4 w-4 text-gray-600" />
                       <span>{format(new Date(examen.fecha), 'PPP', { locale: es })}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Clock className="h-4 w-4 text-gray-600" />
                       <span>{examen.horaInicioTeorico} - {examen.horaFinTeorico}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      <BookOpen className="h-4 w-4 text-gray-600" />
                       <span>{examen.aulaTeorico}</span>
                     </div>
                   </div>
@@ -154,13 +154,13 @@ export function ExamenFinalList() {
                     </div>
                     <div className="space-y-2 pl-6">
                       <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <Clock className="mr-2 h-4 w-4 text-gray-600" />
                         <span>
                           {examen.horaInicioPractico} - {examen.horaFinPractico}
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <User className="mr-2 h-4 w-4 text-gray-600" />
                         <span>Aula {examen.aulaPractico}</span>
                       </div>
                     </div>
