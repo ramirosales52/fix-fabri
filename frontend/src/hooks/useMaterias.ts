@@ -22,46 +22,47 @@ export function useMaterias() {
   useEffect(() => {
     const fetchMaterias = async () => {
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/materias');
-        // const data = await response.json();
-        // setMaterias(data);
-        
-        // Mock data for development
-        const mockMaterias: Materia[] = [
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/materia?page=1&limit=100`,
           {
-            id: 1,
-            nombre: 'Matemática I',
-            codigo: 'MAT1',
-            descripcion: 'Introducción a las matemáticas universitarias',
-            creditos: 8,
-            horasSemanales: 6,
-            carreraId: 1,
-            planEstudioId: 1,
-            año: 1,
-            cuatrimestre: 1,
-            correlativas: []
-          },
-          {
-            id: 2,
-            nombre: 'Física I',
-            codigo: 'FIS1',
-            descripcion: 'Fundamentos de física',
-            creditos: 6,
-            horasSemanales: 6,
-            carreraId: 1,
-            planEstudioId: 1,
-            año: 1,
-            cuatrimestre: 1,
-            correlativas: []
-          },
-          // Add more mock data as needed
-        ];
-        
-        setMaterias(mockMaterias);
-        setLoading(false);
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: typeof window !== 'undefined' && localStorage.getItem('token')
+                ? `Bearer ${localStorage.getItem('token')}`
+                : '',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('No se pudieron obtener las materias');
+        }
+
+        const data = await response.json();
+        const materiasResponse = Array.isArray(data?.data) ? data.data : data;
+
+        const mappedMaterias: Materia[] = materiasResponse.map((materia: any) => ({
+          id: materia.id,
+          nombre: materia.nombre,
+          descripcion: materia.descripcion,
+          codigo: materia.codigo,
+          creditos: materia.creditos,
+          horasSemanales: materia.horasSemanales,
+          carreraId: materia.carreraId,
+          planEstudioId: materia.planEstudioId,
+          año: materia.año,
+          cuatrimestre: materia.cuatrimestre,
+          correlativas: materia.correlativas ?? [],
+        }));
+
+        setMaterias(mappedMaterias);
       } catch (err) {
         setError(err as Error);
+        setMaterias([]);
+      } finally {
         setLoading(false);
       }
     };

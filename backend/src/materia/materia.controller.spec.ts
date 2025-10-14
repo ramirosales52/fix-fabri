@@ -101,7 +101,6 @@ describe('MateriaController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
-            findMateriasDisponibles: jest.fn(),
           },
         },
       ],
@@ -112,14 +111,20 @@ describe('MateriaController', () => {
 
     controller = module.get<MateriaController>(MateriaController);
     mockMateriaService = module.get(MateriaService) as jest.Mocked<MateriaService>;
-    
-    // Configuración por defecto de los mocks
+
+    const paginatedResponse = {
+      data: [mockMateria],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    };
+
     mockMateriaService.create.mockResolvedValue(mockMateria);
-    mockMateriaService.findAll.mockResolvedValue([mockMateria]);
+    mockMateriaService.findAll.mockResolvedValue(paginatedResponse);
     mockMateriaService.findOne.mockResolvedValue(mockMateria);
     mockMateriaService.update.mockResolvedValue(mockMateria);
     mockMateriaService.remove.mockResolvedValue(mockMateria);
-    mockMateriaService.findMateriasDisponibles.mockResolvedValue([mockMateria]);
   });
 
   it('should be defined', () => {
@@ -132,8 +137,8 @@ describe('MateriaController', () => {
       const createMateriaDto: CreateMateriaDto = {
         nombre: 'Matemática',
         descripcion: 'Materia de matemáticas básicas',
-        planesEstudioIds: [1],
-        departamentoId: 1
+        departamentoId: 1,
+        planesEstudioConNivel: [{ planEstudioId: 1, nivel: 1 }],
       };
 
       // Act
@@ -164,7 +169,13 @@ describe('MateriaController', () => {
       const result = await controller.findAll();
 
       // Assert
-      expect(result).toEqual([mockMateria]);
+      expect(result).toEqual({
+        data: [mockMateria],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
       expect(mockMateriaService.findAll).toHaveBeenCalled();
     });
 
@@ -174,51 +185,6 @@ describe('MateriaController', () => {
 
       // Act & Assert
       await expect(controller.findAll()).rejects.toThrow('Error de base de datos');
-    });
-  });
-
-  describe('GET /materia/disponibles', () => {
-    it('debería requerir autenticación', async () => {
-      // Arrange
-      const testingModule = await Test.createTestingModule({
-        controllers: [MateriaController],
-        providers: [
-          {
-            provide: MateriaService,
-            useValue: {
-              findMateriasDisponibles: jest.fn().mockRejectedValue(new UnauthorizedException())
-            }
-          }
-        ]
-      })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({
-        canActivate: jest.fn().mockImplementation(() => {
-          throw new UnauthorizedException();
-        })
-      })
-      .compile();
-
-      const authController = testingModule.get<MateriaController>(MateriaController);
-
-      // Create a mock request with a user that has a userId
-      const mockRequest = {
-        user: {
-          userId: 1
-        }
-      };
-
-      // Act & Assert
-      await expect(authController.findMateriasDisponibles(mockRequest as any)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('debería retornar materias disponibles para el estudiante', async () => {
-      // Act
-      const result = await controller.findMateriasDisponibles({ user: { userId: 1 } });
-
-      // Assert
-      expect(result).toEqual([mockMateria]);
-      expect(mockMateriaService.findMateriasDisponibles).toHaveBeenCalledWith(1);
     });
   });
 
@@ -250,25 +216,17 @@ describe('MateriaController', () => {
       const id = '1';
       const updateMateriaDto: UpdateMateriaDto = {
         nombre: 'Matemática Avanzada',
-        planesEstudioIds: [1]
-        // departamentoId is not part of UpdateMateriaDto
+        departamentoId: 1,
+        planesEstudioConNivel: [{ planEstudioId: 1, nivel: 2 }],
       };
 
-      const expectedResult = {
-        id: 1,
-        ...updateMateriaDto,
-        descripcion: 'Materia de matemáticas básicas',
-        departamento: { id: 1, nombre: 'Básicas' },
-        planEstudio: { id: 1, nombre: 'Plan 2023' }
-      };
-
-      (mockMateriaService.update as jest.Mock).mockResolvedValue(expectedResult);
+      (mockMateriaService.update as jest.Mock).mockResolvedValue(mockMateria);
 
       // Act
       const result = await controller.update(id, updateMateriaDto);
 
       // Assert
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(mockMateria);
       expect(mockMateriaService.update).toHaveBeenCalledWith(1, updateMateriaDto);
     });
   });
@@ -276,21 +234,13 @@ describe('MateriaController', () => {
   describe('remove', () => {
     it('should remove a materia', async () => {
       // Arrange
-      const expectedResult = {
-        id: 1,
-        nombre: 'Matemática',
-        descripcion: 'Materia de matemáticas básicas',
-        planEstudioId: 1,
-        departamentoId: 1
-      };
-
-      (mockMateriaService.remove as jest.Mock).mockResolvedValue(expectedResult);
+      (mockMateriaService.remove as jest.Mock).mockResolvedValue(mockMateria);
 
       // Act
       const result = await controller.remove('1');
 
       // Assert
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(mockMateria);
       expect(mockMateriaService.remove).toHaveBeenCalledWith(1);
     });
   });

@@ -26,6 +26,8 @@ describe('AuthService', () => {
     mockUserService = {
       findByEmail: jest.fn(),
       findByLegajo: jest.fn(),
+      findByEmailWithPassword: jest.fn(),
+      findByLegajoWithPassword: jest.fn(),
       create: jest.fn(),
     };
 
@@ -146,8 +148,8 @@ describe('AuthService', () => {
       };
 
       // Mock de los servicios con tipos correctos
-      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
-      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
+      (mockUserService.findByLegajoWithPassword as jest.Mock).mockResolvedValue(null);
+      (mockUserService.findByEmailWithPassword as jest.Mock).mockResolvedValue(user as User);
       (bcrypt.compare as any).mockResolvedValue(true);
 
       // Act
@@ -165,7 +167,8 @@ describe('AuthService', () => {
           rol: 'estudiante'
         }
       });
-      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+      expect(mockUserService.findByLegajoWithPassword).toHaveBeenCalledWith(email);
+      expect(mockUserService.findByEmailWithPassword).toHaveBeenCalledWith(email);
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: user.id,
@@ -181,15 +184,15 @@ describe('AuthService', () => {
       const password = 'password123';
 
       // Mock de los servicios con tipos correctos
-      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
-      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(null);
+      (mockUserService.findByLegajoWithPassword as jest.Mock).mockResolvedValue(null);
+      (mockUserService.findByEmailWithPassword as jest.Mock).mockResolvedValue(null);
 
       // Act
       const result = await service.login(email, password);
 
       // Assert
       expect(result).toBeNull();
-      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+      expect(mockUserService.findByEmailWithPassword).toHaveBeenCalledWith(email);
     });
 
     it('should return null when password is invalid', async () => {
@@ -208,8 +211,8 @@ describe('AuthService', () => {
       };
 
       // Mock de los servicios con tipos correctos
-      (mockUserService.findByLegajo as jest.Mock).mockResolvedValue(null);
-      (mockUserService.findByEmail as jest.Mock).mockResolvedValue(user as User);
+      (mockUserService.findByLegajoWithPassword as jest.Mock).mockResolvedValue(null);
+      (mockUserService.findByEmailWithPassword as jest.Mock).mockResolvedValue(user as User);
       (bcrypt.compare as any).mockResolvedValue(false);
 
       // Act
@@ -217,7 +220,7 @@ describe('AuthService', () => {
 
       // Assert
       expect(result).toBeNull();
-      expect(mockUserService.findByEmail).toHaveBeenCalledWith(email);
+      expect(mockUserService.findByEmailWithPassword).toHaveBeenCalledWith(email);
       expect(bcrypt.compare).toHaveBeenCalledWith(password, user.password);
     });
   });

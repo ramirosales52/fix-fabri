@@ -1,4 +1,3 @@
-// src/asistencia/asistencia.controller.ts
 import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -16,24 +15,25 @@ class RegistrarAsistenciaDto {
 export class AsistenciaController {
   constructor(private asistenciaService: AsistenciaService) {}
 
-  // 🔒 Secretaría académica: registrar asistencia
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA_ACADEMICA)
+  @Roles(UserRole.SECRETARIA_ACADEMICA, UserRole.PROFESOR)
   @Post('clase/:claseId/estudiante/:estudianteId')
   async registrarAsistencia(
     @Param('claseId') claseId: string,
     @Param('estudianteId') estudianteId: string,
     @Body() dto: RegistrarAsistenciaDto,
+    @Request() req,
   ) {
     return this.asistenciaService.registrarAsistencia(
       +claseId,
       +estudianteId,
       dto.estado,
       dto.motivoJustificacion,
+      req.user.userId,
+      req.user.rol,
     );
   }
 
-  // 🔒 Secretaría académica: ver asistencias de una clase
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA_ACADEMICA)
   @Get('clase/:claseId')
@@ -41,14 +41,12 @@ export class AsistenciaController {
     return this.asistenciaService.obtenerAsistenciasPorClase(+claseId);
   }
 
-  // 🔒 Estudiantes: ver sus asistencias
   @UseGuards(JwtAuthGuard)
   @Get('mis-asistencias')
   async obtenerAsistenciasPorEstudiante(@Request() req) {
     return this.asistenciaService.obtenerAsistenciasPorEstudiante(req.user.userId);
   }
 
-  // 🔒 Estudiantes: ver resumen de asistencias
   @UseGuards(JwtAuthGuard)
   @Get('resumen')
   async obtenerResumenAsistencias(
@@ -61,7 +59,6 @@ export class AsistenciaController {
     );
   }
 
-  // 🔒 Estudiantes: ver asistencias por materia específica
   @UseGuards(JwtAuthGuard)
   @Get('materia/:materiaId')
   async obtenerAsistenciasPorMateria(

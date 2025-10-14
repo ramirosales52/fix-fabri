@@ -1,12 +1,11 @@
-// src/asistencia/asistencia.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Asistencia, EstadoAsistencia } from './entities/asistencia.entity';
 import { Clase, EstadoClase } from '../clase/entities/clase.entity';
 import { User } from '../user/entities/user.entity';
 import { Inscripcion } from '../inscripcion/entities/inscripcion.entity';
+import { UserRole } from '../user/entities/user.entity';
 
-// ✅ Define el tipo para el resumen por materia
 export interface ResumenPorMateria {
   [materiaId: number]: {
     total: number;
@@ -42,10 +41,12 @@ export class AsistenciaService {
     estudianteId: number,
     estado: EstadoAsistencia,
     motivoJustificacion?: string,
+    userId?: number,
+    userRole?: UserRole,
   ): Promise<Asistencia> {
     const clase = await this.claseRepo.findOne({ 
       where: { id: claseId },
-      relations: ['materia', 'materia.inscripciones', 'materia.inscripciones.estudiante'],
+      relations: ['materia', 'materia.inscripciones', 'materia.inscripciones.estudiante', 'docente'],
     });
     
     if (!clase) {
@@ -56,12 +57,17 @@ export class AsistenciaService {
       throw new BadRequestException('La clase debe estar en estado REALIZADA para registrar asistencia');
     }
 
+    if (userId && userRole !== UserRole.SECRETARIA_ACADEMICA) {
+      if (!clase.docente || clase.docente.id !== userId) {
+        throw new ForbiddenException('Solo el docente de la clase puede registrar asistencia');
+      }
+    }
+
     const estudiante = await this.userRepo.findOne({ where: { id: estudianteId } });
     if (!estudiante) {
       throw new NotFoundException('Estudiante no encontrado');
     }
 
-    // Verificar que el estudiante esté inscripto en la materia
     const inscripto = clase.materia.inscripciones.some(
       inscripcion => inscripcion.estudiante.id === estudianteId
     );
@@ -70,19 +76,16 @@ export class AsistenciaService {
       throw new BadRequestException('El estudiante no está inscripto en esta materia');
     }
 
-    // Verificar si ya existe un registro de asistencia
     let asistencia = await this.asistenciaRepo.findOne({
       where: { clase: { id: claseId }, estudiante: { id: estudianteId } },
     });
 
     if (asistencia) {
-      // Actualizar registro existente
       asistencia.estado = estado;
       if (motivoJustificacion) {
         asistencia.motivoJustificacion = motivoJustificacion;
       }
     } else {
-      // Crear nuevo registro
       asistencia = this.asistenciaRepo.create({
         clase,
         estudiante,
@@ -126,10 +129,8 @@ export class AsistenciaService {
     const justificadas = asistencias.filter(a => a.estado === EstadoAsistencia.JUSTIFICADA).length;
     const ausentes = asistencias.filter(a => a.estado === EstadoAsistencia.AUSENTE).length;
 
-    // ✅ SOLUCIÓN DEFINITIVA (versión funcional simple)
     let porMateria: ResumenPorMateria | undefined;
     if (!materiaId) {
-      // 1. Obtener IDs de materias como números válidos
       const materiaIds = Array.from(
         new Set(
           asistencias
@@ -141,7 +142,6 @@ export class AsistenciaService {
         )
       ) as number[];
 
-      // 2. Reducir con tipo explícito para el acumulador
       porMateria = materiaIds.reduce<ResumenPorMateria>((acc, materiaId) => {
         const asistenciasMateria = asistencias.filter(a => {
           const id = Number(a.clase.materia.id);

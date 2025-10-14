@@ -1,9 +1,8 @@
 // src/user/user.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
-import { TestDatabaseModule } from '../test-utils/test-database.module';
 import { PlanEstudioService } from '../plan-estudio/plan-estudio.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -15,6 +14,21 @@ describe('UserService', () => {
   let mockUserRepo: any;
   let mockPlanEstudioService: Partial<PlanEstudioService>;
 
+  const createQueryBuilderMock = () => {
+    const qb: any = {};
+    qb.leftJoinAndSelect = jest.fn().mockReturnValue(qb);
+    qb.where = jest.fn().mockReturnValue(qb);
+    qb.andWhere = jest.fn().mockReturnValue(qb);
+    qb.select = jest.fn().mockReturnValue(qb);
+    qb.orderBy = jest.fn().mockReturnValue(qb);
+    qb.skip = jest.fn().mockReturnValue(qb);
+    qb.take = jest.fn().mockReturnValue(qb);
+    qb.getMany = jest.fn();
+    qb.getOne = jest.fn();
+    qb.getCount = jest.fn();
+    return qb;
+  };
+
   beforeEach(async () => {
     // Crear mocks
     mockUserRepo = {
@@ -24,6 +38,8 @@ describe('UserService', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      createQueryBuilder: jest.fn(),
+      count: jest.fn(),
     };
 
     mockPlanEstudioService = {
@@ -70,10 +86,10 @@ describe('UserService', () => {
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
+        createdAt: undefined,
         planEstudio: undefined,
       };
 
@@ -87,7 +103,8 @@ describe('UserService', () => {
         legajo: dto.legajo,
         dni: dto.dni,
         rol: dto.rol,
-        planEstudio: undefined
+        createdAt: undefined,
+        planEstudio: undefined,
       }));
       jest.spyOn(mockUserRepo, 'save').mockResolvedValue(userResult);
 
@@ -113,16 +130,16 @@ describe('UserService', () => {
         planEstudioId: 1,
       };
 
-      const mockPlan = { id: 1, nombre: 'Plan Test 1' } as PlanEstudio;
+      const mockPlan = { id: 1, nombre: 'Plan Test 1', carrera: { id: 1, nombre: 'Carrera Test' } } as PlanEstudio;
       const userResult: any = {
         id: 1,
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
+        createdAt: undefined,
         planEstudio: mockPlan,
       };
 
@@ -136,7 +153,8 @@ describe('UserService', () => {
         legajo: dto.legajo,
         dni: dto.dni,
         rol: dto.rol,
-        planEstudio: mockPlan
+        createdAt: undefined,
+        planEstudio: mockPlan,
       }));
       jest.spyOn(mockUserRepo, 'save').mockResolvedValue(userResult);
 
@@ -178,111 +196,174 @@ describe('UserService', () => {
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
-        planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
+        planEstudio: {
+          id: 1,
+          nombre: 'Plan Test 1',
+          carrera: { id: 1, nombre: 'Carrera Test' },
+        } as PlanEstudio,
       };
       
-      jest.spyOn(mockUserRepo, 'findOne').mockResolvedValue(userResult);
+      const qb = createQueryBuilderMock();
+      qb.getOne.mockResolvedValue({
+        ...userResult,
+        planEstudio: {
+          id: 1,
+          nombre: 'Plan Test 1',
+          carrera: { id: 1, nombre: 'Carrera Test' },
+        },
+      });
+      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       const result = await service.findByEmail('juan.perez@example.com');
 
       // Assert
-      expect(result).toEqual(userResult);
-      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
-        where: { email: 'juan.perez@example.com' },
-        relations: ['planEstudio']
-      });
+      expect(result).toEqual(expect.objectContaining({
+        id: 1,
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email: 'juan.perez@example.com',
+        legajo: '12345',
+        dni: '12345678',
+        rol: UserRole.ESTUDIANTE,
+        planEstudio: expect.objectContaining({
+          id: 1,
+          nombre: 'Plan Test 1',
+          carrera: expect.objectContaining({ id: 1, nombre: 'Carrera Test' }),
+        }),
+      }));
+      expect(mockUserRepo.createQueryBuilder).toHaveBeenCalledWith('user');
     });
 
     it('should return undefined if user is not found', async () => {
       // Arrange
-      jest.spyOn(mockUserRepo, 'findOne').mockResolvedValue(null);
+      const qb = createQueryBuilderMock();
+      qb.getOne.mockResolvedValue(null);
+      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       const result = await service.findByEmail('nonexistent@example.com');
 
       // Assert
       expect(result).toBeUndefined();
-      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
-        where: { email: 'nonexistent@example.com' },
-        relations: ['planEstudio']
-      });
+      expect(mockUserRepo.createQueryBuilder).toHaveBeenCalled();
     });
   });
 
   describe('findById', () => {
     it('should return a user if found', async () => {
-      // Arrange
-      const userResult: any = {
+      const createdAt = new Date('2024-01-01T00:00:00Z');
+      const userEntity: any = {
         id: 1,
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
-        planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
+        createdAt,
+        planEstudio: {
+          id: 1,
+          nombre: 'Plan Test 1',
+          carrera: { id: 1, nombre: 'Carrera Test' },
+        } as PlanEstudio,
       };
-      
-      jest.spyOn(mockUserRepo, 'findOne').mockResolvedValue(userResult);
 
-      // Act
+      const expectedUser = {
+        id: 1,
+        nombre: 'Juan',
+        apellido: 'Pérez',
+        email: 'juan.perez@example.com',
+        legajo: '12345',
+        dni: '12345678',
+        rol: UserRole.ESTUDIANTE,
+        createdAt,
+        planEstudio: {
+          id: 1,
+          nombre: 'Plan Test 1',
+          carrera: { id: 1, nombre: 'Carrera Test' },
+        },
+      };
+
+      const qb = createQueryBuilderMock();
+      qb.getOne.mockResolvedValue(userEntity);
+      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
+
       const result = await service.findById(1);
 
-      // Assert
-      expect(result).toEqual(userResult);
-      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 1 },
-        relations: ['planEstudio']
-      });
+      expect(result).toEqual(expectedUser);
+      expect(mockUserRepo.createQueryBuilder).toHaveBeenCalledWith('user');
     });
 
     it('should return undefined if user is not found', async () => {
       // Arrange
-      jest.spyOn(mockUserRepo, 'findOne').mockResolvedValue(null);
+      const qb = createQueryBuilderMock();
+      qb.getOne.mockResolvedValue(null);
+      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       const result = await service.findById(999);
 
       // Assert
       expect(result).toBeUndefined();
-      expect(mockUserRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 999 },
-        relations: ['planEstudio']
-      });
+      expect(mockUserRepo.createQueryBuilder).toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('should return all users', async () => {
-      // Arrange
-      const users: any[] = [{
-        id: 1,
-        nombre: 'Juan',
-        apellido: 'Pérez',
-        email: 'juan.perez@example.com',
-        password: 'password123',
-        legajo: '12345',
-        dni: '12345678',
-        rol: UserRole.ESTUDIANTE,
-        planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
-      }];
-      
-      jest.spyOn(mockUserRepo, 'find').mockResolvedValue(users);
+    it('should return paginated users', async () => {
+      const qb = createQueryBuilderMock();
+      qb.getMany.mockResolvedValue([
+        {
+          id: 1,
+          nombre: 'Juan',
+          apellido: 'Pérez',
+          email: 'juan.perez@example.com',
+          legajo: '12345',
+          dni: '12345678',
+          rol: UserRole.ESTUDIANTE,
+          createdAt: new Date('2024-01-01'),
+          planEstudio: {
+            id: 1,
+            nombre: 'Plan Test 1',
+            carrera: { id: 1, nombre: 'Carrera Test' },
+          },
+        } as User,
+      ]);
+      qb.getCount.mockResolvedValue(1);
+      mockUserRepo.createQueryBuilder.mockReturnValue(qb);
+      mockUserRepo.count.mockResolvedValue(1);
 
-      // Act
-      const result = await service.findAll();
+      const result = await service.findAll(1, 10);
 
-      // Assert
-      expect(result).toEqual(users);
-      expect(mockUserRepo.find).toHaveBeenCalledWith({
-        relations: ['planEstudio']
+      expect(result).toEqual({
+        data: [
+          expect.objectContaining({
+            id: 1,
+            nombre: 'Juan',
+            apellido: 'Pérez',
+            email: 'juan.perez@example.com',
+            legajo: '12345',
+            dni: '12345678',
+            rol: UserRole.ESTUDIANTE,
+            planEstudio: expect.objectContaining({
+              id: 1,
+              nombre: 'Plan Test 1',
+              carrera: expect.objectContaining({ id: 1, nombre: 'Carrera Test' }),
+            }),
+          }),
+        ],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
       });
+      expect(mockUserRepo.count).toHaveBeenCalled();
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
     });
   });
 
@@ -298,11 +379,11 @@ describe('UserService', () => {
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
-        planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
+        createdAt: undefined,
+        planEstudio: { id: 1, nombre: 'Plan Test 1', carrera: { id: 1, nombre: 'Carrera Test' } } as PlanEstudio,
       };
       
       const expectedUpdatedUser: any = {
@@ -320,7 +401,6 @@ describe('UserService', () => {
       expect(result).toEqual(expectedUpdatedUser);
       expect(mockUserRepo.update).toHaveBeenCalledWith(1, {
         nombre: 'Juan Carlos',
-        planEstudio: undefined
       });
     });
 
@@ -336,14 +416,15 @@ describe('UserService', () => {
         nombre: 'Juan',
         apellido: 'Pérez',
         email: 'juan.perez@example.com',
-        password: 'password123',
         legajo: '12345',
         dni: '12345678',
         rol: UserRole.ESTUDIANTE,
-        planEstudio: { id: 1, nombre: 'Plan Test 1' } as PlanEstudio,
+        createdAt: undefined,
+        updatedAt: undefined,
+        planEstudio: { id: 1, nombre: 'Plan Test 1', carrera: { id: 1, nombre: 'Carrera Test' } } as PlanEstudio,
       };
       
-      const mockNewPlan = { id: 2, nombre: 'Plan Test 2' } as PlanEstudio;
+      const mockNewPlan = { id: 2, nombre: 'Plan Test 2', carrera: { id: 2, nombre: 'Carrera Nueva' } } as PlanEstudio;
       
       const expectedUpdatedUser: any = {
         ...originalUser,
@@ -363,7 +444,7 @@ describe('UserService', () => {
       expect(mockPlanEstudioService.findOne).toHaveBeenCalledWith(2);
       expect(mockUserRepo.update).toHaveBeenCalledWith(1, {
         nombre: 'Juan Carlos',
-        planEstudio: mockNewPlan
+        planEstudioId: mockNewPlan.id,
       });
     });
   });

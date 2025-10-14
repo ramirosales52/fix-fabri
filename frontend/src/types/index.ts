@@ -7,6 +7,10 @@ export interface User {
   apellido: string;
   legajo: string;
   rol: UserRole;
+  planEstudio?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 export interface AuthResponse {

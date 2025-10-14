@@ -14,10 +14,28 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body: { legajo: string; password: string }) {
-    const token = await this.authService.login(body.legajo, body.password);
-    if (!token) return { error: 'Credenciales inválidas' };
-    return token;
+  async login(@Body() body: { email?: string; legajo?: string; password: string }) {
+    if (!body.password) {
+      return { error: 'La contraseña es requerida' };
+    }
+    
+    const identifier = body.email || body.legajo;
+    if (!identifier) {
+      return { error: 'Se requiere email o legajo' };
+    }
+    
+    try {
+      const result = await this.authService.login(identifier, body.password);
+      if (!result) {
+        return { error: 'Credenciales inválidas' };
+      }
+      return result;
+    } catch (error) {
+      return { 
+        error: error.message || 'Error al iniciar sesión',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
+    }
   }
 
   // 🔒 Endpoint protegido

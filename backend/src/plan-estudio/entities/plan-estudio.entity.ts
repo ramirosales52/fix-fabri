@@ -1,9 +1,9 @@
-// src/plan-estudio/entities/plan-estudio.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinColumn, JoinTable } from 'typeorm';
 import { getDateColumnType } from '../../common/database/date-column.util';
 import { Carrera } from '../../carrera/entities/carrera.entity';
 import { Materia } from '../../materia/entities/materia.entity';
 import { User } from '../../user/entities/user.entity';
+import { MateriaPlanEstudio } from '../../materia/entities/materia-plan-estudio.entity';
 
 @Entity()
 export class PlanEstudio {
@@ -19,21 +19,14 @@ export class PlanEstudio {
   @Column({ nullable: true })
   año: number;
 
-  // ✅ CORRECCIÓN: La relación debe apuntar a 'planesEstudio' en Carrera, no a 'planes'
-  @ManyToOne(() => Carrera, (carrera) => carrera.planesEstudio) // ✅ Cambiado de 'planes' a 'planesEstudio'
+  @ManyToOne(() => Carrera, (carrera) => carrera.planesEstudio)
   @JoinColumn({ name: 'carreraId' })
   carrera: Carrera;
 
-  // Relación muchos a muchos con Materia
-  @ManyToMany(() => Materia, (materia) => materia.planesEstudio)
-  @JoinTable({
-    name: 'materia_planes_estudio',
-    joinColumn: { name: 'planEstudioId' },
-    inverseJoinColumn: { name: 'materiaId' }
-  })
-  materias: Materia[];
+  // Relación con la tabla intermedia
+  @OneToMany(() => MateriaPlanEstudio, relacion => relacion.planEstudio)
+  relacionesConMaterias: MateriaPlanEstudio[];
 
-  // 👇 Relación inversa: estudiantes que tienen este plan
   @OneToMany(() => User, (user) => user.planEstudio)
   estudiantes: User[];
 

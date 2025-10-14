@@ -14,6 +14,7 @@ import { Clase } from '../clase/entities/clase.entity';
 import { ExamenFinal } from '../examen/entities/examen.entity';
 import { Departamento } from '../departamento/entities/departamento.entity';
 import { DepartamentoModule } from '../departamento/departamento.module';
+import { MateriaPlanEstudio } from './entities/materia-plan-estudio.entity';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { DepartamentoModule } from '../departamento/departamento.module';
       Horario,
       Clase,
       ExamenFinal,
-      Departamento // Agregar Departamento aquí
+      Departamento,
+      MateriaPlanEstudio
     ]),
     DepartamentoModule, // Importar el módulo de Departamento
   ],

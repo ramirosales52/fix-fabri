@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getHomePathByRole } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { LucideIcon } from 'lucide-react';
@@ -20,13 +20,13 @@ import {
 
 interface NavItem {
   title: string;
-  href: string;
+  href: string | ((role?: UserRole) => string);
   icon: LucideIcon;
   roles?: UserRole[];
 }
 
 const navItems: NavItem[] = [
-  { title: 'Dashboard', href: '/dashboard', icon: Home },
+  { title: 'Inicio', href: (role?: UserRole) => getHomePathByRole(role), icon: Home },
   { title: 'Materias', href: '/materias', icon: BookOpen },
   { title: 'Inscripciones', href: '/inscripciones', icon: ClipboardList, roles: ['estudiante'] },
   { title: 'Mi Horario', href: '/mi-horario', icon: Calendar, roles: ['estudiante', 'profesor'] },
@@ -40,11 +40,17 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   const filteredItems = useMemo(() => {
-    return navItems.filter((item) => {
-      if (!item.roles || item.roles.length === 0) return true;
-      if (!user?.rol) return false;
-      return item.roles.includes(user.rol);
-    });
+    const role = user?.rol;
+    return navItems
+      .map((item) => {
+        const href = typeof item.href === 'function' ? item.href(role) : item.href;
+        return { ...item, href };
+      })
+      .filter((item) => {
+        if (!item.roles || item.roles.length === 0) return true;
+        if (!user?.rol) return false;
+        return item.roles.includes(user.rol);
+      });
   }, [user?.rol]);
 
   const initials = useMemo(() => {

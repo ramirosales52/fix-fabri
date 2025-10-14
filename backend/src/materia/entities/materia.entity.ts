@@ -1,4 +1,3 @@
-// src/materia/entities/materia.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinTable, OneToOne, JoinColumn } from 'typeorm';
 import { PlanEstudio } from '../../plan-estudio/entities/plan-estudio.entity';
 import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
@@ -12,6 +11,7 @@ import { Comision } from '../../comision/entities/comision.entity';
 import { Departamento } from '../../departamento/entities/departamento.entity';
 import { CorrelativasCursada } from '../../correlativas/entities/correlativas-cursada.entity';
 import { CorrelativasFinal } from '../../correlativas/entities/correlativas-final.entity';
+import { MateriaPlanEstudio } from './materia-plan-estudio.entity';
 
 @Entity()
 export class Materia {
@@ -24,14 +24,9 @@ export class Materia {
   @Column({ nullable: true })
   descripcion: string;
 
-  // Relación muchos a muchos con PlanEstudio
-  @ManyToMany(() => PlanEstudio, (plan) => plan.materias)
-  @JoinTable({
-    name: 'materia_planes_estudio',
-    joinColumn: { name: 'materiaId' },
-    inverseJoinColumn: { name: 'planEstudioId' }
-  })
-  planesEstudio: PlanEstudio[];
+  // Relación con la tabla intermedia
+  @OneToMany(() => MateriaPlanEstudio, relacion => relacion.materia)
+  relacionesConPlanes: MateriaPlanEstudio[];
 
   @ManyToOne(() => Departamento, (departamento) => departamento.materias)
   @JoinColumn({ name: 'departamentoId' })

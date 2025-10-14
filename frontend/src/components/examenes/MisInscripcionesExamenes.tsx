@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, BookOpen, AlertCircle, Check, X, Book, ClipboardCheck, User } from 'lucide-react';
+import { Calendar, Clock, BookOpen, AlertCircle, Check, X, Book, ClipboardCheck, User, Users } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';

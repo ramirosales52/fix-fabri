@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Clock, User, Book, ClipboardCheck, Trash2, Edit, Search, X } from 'lucide-react';
+import { Plus, Calendar, Clock, User, Users, Book, ClipboardCheck, Trash2, Edit, Search, X } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,17 @@ import { useToast } from '@/components/ui/use-toast';
 import { ExamenFinalService, type ExamenFinal } from '@/services/examenFinal.service';
 import { useMaterias } from '@/hooks/useMaterias';
 import { useDocentes } from '@/hooks/useDocentes';
+import { isAxiosError } from 'axios';
+
+const getErrorMessage = (error: unknown) => {
+  if (isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message ?? error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return null;
+};
 
 export function AdminExamenesFinales() {
   const [examenes, setExamenes] = useState<ExamenFinal[]>([]);
@@ -73,7 +84,7 @@ export function AdminExamenesFinales() {
       console.error('Error al cargar exámenes:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los exámenes',
+        description: getErrorMessage(error) ?? 'No se pudieron cargar los exámenes',
         variant: 'destructive',
       });
     } finally {
@@ -209,11 +220,11 @@ export function AdminExamenesFinales() {
       
       setIsDialogOpen(false);
       cargarExamenes();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar el examen:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Ocurrió un error al guardar el examen',
+        description: getErrorMessage(error) ?? 'Ocurrió un error al guardar el examen',
         variant: 'destructive',
       });
     }
@@ -242,7 +253,7 @@ export function AdminExamenesFinales() {
       console.error('Error al eliminar el examen:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo eliminar el examen',
+        description: getErrorMessage(error) ?? 'No se pudo eliminar el examen',
         variant: 'destructive',
       });
     } finally {

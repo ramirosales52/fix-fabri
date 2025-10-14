@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ExamenFinalService, type ExamenFinal } from '@/services/examenFinal.service';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAxiosError } from 'axios';
 
 export function ExamenFinalList() {
   const [examenes, setExamenes] = useState<ExamenFinal[]>([]);
@@ -32,9 +33,14 @@ export function ExamenFinalList() {
       setExamenes(examenesFuturos);
     } catch (error) {
       console.error('Error al cargar exámenes finales:', error);
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : error instanceof Error
+          ? error.message
+          : null;
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los exámenes finales',
+        description: message || 'No se pudieron cargar los exámenes finales',
         variant: 'destructive',
       });
     } finally {
@@ -60,11 +66,16 @@ export function ExamenFinalList() {
         e.id === examen.id ? { ...e, inscriptos: e.inscriptos + 1, disponibles: e.disponibles - 1 } : e
       );
       setExamenes(nuevosExamenes);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al inscribirse al examen:', error);
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : error instanceof Error
+          ? error.message
+          : null;
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Error al inscribirse al examen',
+        description: message || 'Error al inscribirse al examen',
         variant: 'destructive',
       });
     } finally {

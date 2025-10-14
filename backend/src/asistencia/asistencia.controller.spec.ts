@@ -54,13 +54,15 @@ describe('AsistenciaController', () => {
       
       (mockAsistenciaService.registrarAsistencia as jest.Mock).mockResolvedValue(expectedResult);
 
+      const req = { user: { userId: 5, rol: 'profesor' } };
+
       // Act
-      const result = await controller.registrarAsistencia(claseId, estudianteId, dto);
+      const result = await controller.registrarAsistencia(claseId, estudianteId, dto, req as any);
 
       // Assert
       expect(result).toEqual(expectedResult);
       expect(mockAsistenciaService.registrarAsistencia).toHaveBeenCalledWith(
-        1, 1, EstadoAsistencia.PRESENTE, undefined
+        1, 1, EstadoAsistencia.PRESENTE, undefined, 5, 'profesor'
       );
     });
   });

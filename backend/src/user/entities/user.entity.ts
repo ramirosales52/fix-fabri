@@ -1,5 +1,4 @@
-// src/user/entities/user.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, JoinColumn, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Inscripcion } from '../../inscripcion/entities/inscripcion.entity';
 import { Materia } from '../../materia/entities/materia.entity';
 import { Evaluacion } from '../../evaluacion/entities/evaluacion.entity';
@@ -43,7 +42,9 @@ export class User {
   @Column({ type: 'simple-enum', enum: UserRole, default: UserRole.ESTUDIANTE })
   rol: UserRole;
 
-  // Relaciones corregidas
+  @CreateDateColumn()
+  createdAt: Date;
+
   @OneToMany(() => Inscripcion, inscripcion => inscripcion.estudiante)
   inscripciones: Inscripcion[];
 
@@ -60,21 +61,15 @@ export class User {
   @OneToMany(() => ExamenFinalNuevo, (examen) => examen.docente)
   examenesFinales: ExamenFinalNuevo[];
 
-  // Relación con horarios (para profesores) - Corregida
-  // Cambiamos de materia a docente para que coincida con Horario
   @OneToMany(() => Horario, horario => horario.docente) 
   horariosDictados: Horario[];
 
-  // Relación con asistencias (para estudiantes)
   @OneToMany(() => Asistencia, asistencia => asistencia.estudiante)
   asistencias: Asistencia[];
 
-  // Relación con clases (para profesores) - Corregida
-  // Cambiamos de materia a docente para que coincida con Clase (asumiendo que Clase tiene docente)
   @OneToMany(() => Clase, clase => clase.docente) 
   clasesDictadas: Clase[];
 
-  // Relación con plan de estudio
   @ManyToOne(() => PlanEstudio, planEstudio => planEstudio.estudiantes, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'planEstudioId' })
   planEstudio?: PlanEstudio;

@@ -104,6 +104,8 @@
     "testEnvironment": "node",
     "testTimeout": 10000,
     "maxWorkers": 1,
-    "setupFilesAfterEnv": ["<rootDir>/../test/test-setup.ts"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/../test/test-setup.ts"
+    ]
   }
 }

@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import type { LucideIcon } from 'lucide-react';
+import type { UserRole } from '@/types';
 import {
   Sheet,
   SheetContent,
@@ -35,8 +37,8 @@ import {
 interface NavItem {
   title: string;
   href: string;
-  icon: any;
-  roles?: string[];
+  icon: LucideIcon;
+  roles?: UserRole[];
 }
 
 const navItems: NavItem[] = [
@@ -133,9 +135,10 @@ export function MobileSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const filteredNavItems = navItems.filter(item => {
+  const filteredNavItems = navItems.filter((item) => {
     if (!item.roles) return true;
-    return item.roles.includes(user?.rol || '');
+    if (!user?.rol) return false;
+    return item.roles.includes(user.rol);
   });
 
   return (

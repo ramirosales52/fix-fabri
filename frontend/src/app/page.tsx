@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getHomePathByRole } from '@/contexts/AuthContext';
+import { isAxiosError } from 'axios';
 
 const loginSchema = z.object({
   identifier: z
@@ -45,13 +46,14 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login(data.identifier, data.password);
-      router.push('/dashboard');
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        'Error al iniciar sesión';
+      const loggedUser = await login(data.identifier, data.password);
+      router.push(getHomePathByRole(loggedUser.rol));
+    } catch (error: unknown) {
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : error instanceof Error
+          ? error.message
+          : 'Error al iniciar sesión';
       setError(message);
     } finally {
       setIsLoading(false);

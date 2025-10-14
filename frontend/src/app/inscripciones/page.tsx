@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { isAxiosError } from 'axios';
+import axios from 'axios';
 
 interface Materia {
   id: number;
@@ -93,24 +95,112 @@ export default function InscripcionesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('InscripcionesPage: useEffect ejecutándose');
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [materiasRes, inscripcionesRes] = await Promise.all([
-        api.get('/materia/disponibles'),
-        api.get('/inscripcion/cursando')
-      ]);
-      setMateriasDisponibles(materiasRes.data);
-      setMisInscripciones(inscripcionesRes.data);
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+
+      console.log('Token disponible:', !!token);
+      console.log('Usuario en localStorage:', userStr);
+
+      if (!token || !userStr) {
+        console.log('No hay token o usuario, mostrando error de autenticación');
+        setAuthError('No hay datos de autenticación. Por favor, inicia sesión nuevamente.');
+        setLoading(false);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      if (!user.planEstudio?.id) {
+        console.log('Usuario no tiene planEstudioId');
+        setAuthError('Tu cuenta no tiene un plan de estudios asignado.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setAuthError(null);
+      console.log('Iniciando carga de datos...');
+
+      let materiasLoaded = false;
+      let inscripcionesLoaded = false;
+
+      // Cargar todas las materias del plan de estudios
+      try {
+        console.log('Cargando materias del plan de estudios...');
+        const materiasRes = await api.get(`/materia/del-plan/${user.planEstudio.id}`);
+        console.log('Materias del plan cargadas:', materiasRes.data.length);
+        setMateriasDisponibles(materiasRes.data);
+        materiasLoaded = true;
+      } catch (error) {
+        console.error('Error al cargar materias del plan:', error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          setAuthError('Error de autenticación al cargar materias. Tu sesión puede haber expirado.');
+          setMateriasDisponibles([]);
+        } else {
+          setMateriasDisponibles([]);
+        }
+      }
+
+      // Cargar inscripciones actuales
+      try {
+        console.log('Cargando inscripciones actuales...');
+        const inscripcionesRes = await api.get('/inscripcion/cursando');
+        console.log('Inscripciones cargadas:', inscripcionesRes.data.length);
+        setMisInscripciones(inscripcionesRes.data);
+        inscripcionesLoaded = true;
+      } catch (error) {
+        console.error('Error al cargar inscripciones actuales:', error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          setAuthError('Error de autenticación al cargar inscripciones. Tu sesión puede haber expirado.');
+          setMisInscripciones([]);
+        } else {
+          setMisInscripciones([]);
+        }
+      }
+
+      // Filtrar materias aprobadas después de cargar ambas listas
+      if (materiasLoaded && inscripcionesLoaded) {
+        const materiasAprobadas = new Set(
+          misInscripciones
+            .filter(insc => insc.stc === 'APROBADA')
+            .map(insc => insc.materia.id)
+        );
+
+        const materiasFiltradas = materiasDisponibles.filter(
+          materia => !materiasAprobadas.has(materia.id)
+        );
+
+        setMateriasDisponibles(materiasFiltradas);
+        console.log('Materias filtradas (excluyendo aprobadas):', materiasFiltradas.length);
+      }
+
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      console.error('Error general al cargar datos:', error);
+      setAuthError('Error inesperado al cargar la página. Intenta nuevamente.');
     } finally {
       setLoading(false);
+      console.log('Carga de datos finalizada');
     }
+  };
+
+  const handleRetry = () => {
+    console.log('Reintentando carga de datos...');
+    fetchData();
+  };
+
+  const handleGoToLogin = () => {
+    console.log('Redirigiendo manualmente al login');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   };
 
   const handleInscripcion = async () => {
@@ -139,31 +229,50 @@ export default function InscripcionesPage() {
       setSelectedMateria(null);
       setSelectedComision('');
       fetchData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Error al inscribirse",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : error instanceof Error
+          ? error.message
+          : null;
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log('Error 401 en inscripción - mostrando error en pantalla');
+        setAuthError('Error de autenticación. Tu sesión ha expirado.');
+        setShowModal(false);
+        setSelectedMateria(null);
+        setSelectedComision('');
+      } else {
+        toast({
+          title: "Error",
+          description: message || "Error al inscribirse",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleCancelarInscripcion = async (inscripcionId: number) => {
     try {
       await api.delete(`/inscripcion/${inscripcionId}`);
-      
+
       toast({
         title: "Éxito",
         description: "Inscripción cancelada correctamente",
       });
-      
+
       fetchData();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al cancelar la inscripción",
-        variant: "destructive",
-      });
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log('Error 401 en cancelar inscripción - mostrando error en pantalla');
+        setAuthError('Error de autenticación. Tu sesión ha expirado.');
+      } else {
+        toast({
+          title: "Error",
+          description: "Error al cancelar la inscripción",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -245,153 +354,173 @@ export default function InscripcionesPage() {
               <h1 className="text-3xl font-bold text-gray-900">Inscripciones</h1>
               <p className="text-gray-600 mt-1">Gestiona tus inscripciones a materias</p>
             </div>
-            <Button onClick={() => setShowModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Inscripción
-            </Button>
+            {!authError && (
+              <Button onClick={() => setShowModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Inscripción
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Mis Inscripciones */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Mis Inscripciones Actuales</h2>
-          {misInscripciones.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No tienes inscripciones activas</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {misInscripciones.map((inscripcion) => (
-                <Card key={inscripcion.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{inscripcion.materia.nombre}</CardTitle>
-                        <CardDescription>{inscripcion.comision?.nombre || 'Sin comisión asignada'}</CardDescription>
-                      </div>
-                      {getEstadoBadge(inscripcion)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      {renderComisionDocente(inscripcion.comision)}
-                      {inscripcion.comision?.horarios?.map((horario, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>
-                            {horario.dia} {horario.horaInicio} - {horario.horaFin}
-                          </span>
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>
-                          Inscrito el {new Date(inscripcion.fechaInscripcion).toLocaleDateString('es-AR')}
-                        </span>
-                      </div>
-                    </div>
-                    {canCancelInscripcion(inscripcion) && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full mt-4"
-                        onClick={() => handleCancelarInscripcion(inscripcion.id)}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancelar Inscripción
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Materias Disponibles */}
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Materias Disponibles</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Buscar materias..."
-                className="pl-10 w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {authError ? (
+          <div className="bg-red-50 border border-red-200 rounded-md p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-red-900 mb-2">Error de Autenticación</h2>
+            <p className="text-red-700 mb-4">{authError}</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={handleRetry} variant="outline">
+                Reintentar
+              </Button>
+              <Button onClick={handleGoToLogin} variant="destructive">
+                Ir al Login
+              </Button>
             </div>
           </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredMaterias.map((materia) => (
-                <Card key={materia.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{materia.nombre}</CardTitle>
-                    <CardDescription>{materia.descripcion}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {(() => {
-                        const correlativas = getCorrelativasNombres(materia.correlativasCursada);
-                        if (correlativas.length === 0) return null;
-                        return (
-                          <div className="text-sm">
-                            <span className="font-medium">Correlativas cursada:</span>
-                            <ul className="ml-4 mt-1">
-                              {correlativas.map((nombre, index) => (
-                                <li key={`${materia.id}-corr-${index}`} className="text-gray-600">• {nombre}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })()}
-                      <div className="text-sm">
-                        <span className="font-medium">Comisiones disponibles:</span>
-                        <div className="mt-1 space-y-1">
-                          {(materia.comisiones ?? []).map((comision) => (
-                            <div key={comision.id} className="flex justify-between items-center">
-                              <span className="text-gray-600">{comision.nombre}</span>
-                              <Badge variant="secondary">{formatCupo(comision)}</Badge>
-                            </div>
-                          ))}
-                          {(materia.comisiones ?? []).length === 0 && (
-                            <p className="text-gray-500">Sin comisiones cargadas</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full mt-4"
-                      onClick={() => {
-                        setSelectedMateria(materia);
-                        setShowModal(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Inscribirse
-                    </Button>
+        ) : (
+          <>
+            {/* Mis Inscripciones */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Mis Inscripciones Actuales</h2>
+              {misInscripciones.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No tienes inscripciones activas</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {misInscripciones.map((inscripcion) => (
+                    <Card key={inscripcion.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">{inscripcion.materia.nombre}</CardTitle>
+                            <CardDescription>{inscripcion.comision?.nombre || 'Sin comisión asignada'}</CardDescription>
+                          </div>
+                          {getEstadoBadge(inscripcion)}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 text-sm">
+                          {renderComisionDocente(inscripcion.comision)}
+                          {inscripcion.comision?.horarios?.map((horario, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-gray-400" />
+                              <span>
+                                {horario.dia} {horario.horaInicio} - {horario.horaFin}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span>
+                              Inscrito el {new Date(inscripcion.fechaInscripcion).toLocaleDateString('es-AR')}
+                            </span>
+                          </div>
+                        </div>
+                        {canCancelInscripcion(inscripcion) && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full mt-4"
+                            onClick={() => handleCancelarInscripcion(inscripcion.id)}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancelar Inscripción
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* Materias Disponibles */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Materias Disponibles</h2>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar materias..."
+                    className="pl-10 w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredMaterias.map((materia) => (
+                    <Card key={materia.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <CardTitle className="text-lg">{materia.nombre}</CardTitle>
+                        <CardDescription>{materia.descripcion}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {(() => {
+                            const correlativas = getCorrelativasNombres(materia.correlativasCursada);
+                            if (correlativas.length === 0) return null;
+                            return (
+                              <div className="text-sm">
+                                <span className="font-medium">Correlativas cursada:</span>
+                                <ul className="ml-4 mt-1">
+                                  {correlativas.map((nombre, index) => (
+                                    <li key={`${materia.id}-corr-${index}`} className="text-gray-600">• {nombre}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })()}
+                          <div className="text-sm">
+                            <span className="font-medium">Comisiones disponibles:</span>
+                            <div className="mt-1 space-y-1">
+                              {(materia.comisiones ?? []).map((comision) => (
+                                <div key={comision.id} className="flex justify-between items-center">
+                                  <span className="text-gray-600">{comision.nombre}</span>
+                                  <Badge variant="secondary">{formatCupo(comision)}</Badge>
+                                </div>
+                              ))}
+                              {(materia.comisiones ?? []).length === 0 && (
+                                <p className="text-gray-500">Sin comisiones cargadas</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full mt-4"
+                          onClick={() => {
+                            setSelectedMateria(materia);
+                            setShowModal(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Inscribirse
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal de Inscripción */}
-      {showModal && (
+      {showModal && !authError && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md text-gray-900">
             <CardHeader>

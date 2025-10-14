@@ -52,25 +52,39 @@ export default function MateriasPage() {
   const [loading, setLoading] = useState(true);
   const [selectedMateria, setSelectedMateria] = useState<Materia | null>(null);
 
-  useEffect(() => {
-    fetchMaterias();
-  }, []);
-
   const fetchMaterias = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/materia');
-      setMaterias(response.data);
+      // The API returns a paginated response with items in response.data.items
+      const materiasData = Array.isArray(response.data?.items) 
+        ? response.data.items 
+        : Array.isArray(response.data) 
+          ? response.data 
+          : [];
+      
+      console.log('Materias cargadas:', materiasData);
+      setMaterias(materiasData);
     } catch (error) {
       console.error('Error al cargar materias:', error);
+      setMaterias([]); // Ensure materias is always an array
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredMaterias = materias.filter(materia =>
-    materia.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    materia.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchMaterias();
+  }, []);
+
+  const filteredMaterias = Array.isArray(materias) ? materias.filter(materia => {
+    if (!materia) return false;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (materia.nombre?.toLowerCase() || '').includes(searchLower) ||
+      (materia.descripcion?.toLowerCase() || '').includes(searchLower)
+    );
+  }) : [];
 
   const getDayName = (day: string) => {
     const days: { [key: string]: string } = {
@@ -85,23 +99,14 @@ export default function MateriasPage() {
   };
 
   const formatCupo = (comision: MateriaComision) => {
-    if (
-      typeof comision.cupoDisponible === 'number' &&
-      typeof comision.cupoMaximo === 'number'
-    ) {
+    if (typeof comision.cupoDisponible === 'number' && typeof comision.cupoMaximo === 'number') {
       return `${comision.cupoDisponible}/${comision.cupoMaximo}`;
     }
-
     if (typeof comision.cupo === 'number') {
       const inscriptos = comision.inscripciones?.length ?? 0;
       return `${inscriptos}/${comision.cupo}`;
     }
-
-    if (comision.inscripciones) {
-      return `${comision.inscripciones.length} inscriptos`;
-    }
-
-    return 'Cupo no disponible';
+    return 'Sin cupo definido';
   };
 
   return (
@@ -138,92 +143,84 @@ export default function MateriasPage() {
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ) : filteredMaterias.length > 0 ? (
+          <div className="grid gap-6">
             {filteredMaterias.map((materia) => (
               <Card key={materia.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="text-lg">{materia.nombre}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {materia.descripcion || 'Sin descripción'}
-                      </CardDescription>
-                    </div>
-                    <BookOpen className="h-5 w-5 text-gray-400" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {materia.departamento && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="h-4 w-4" />
-                        <span>{materia.departamento.nombre}</span>
-                      </div>
-                    )}
-                    
-                    {materia.profesores && materia.profesores.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {materia.profesores[0].nombre} {materia.profesores[0].apellido}
-                          {materia.profesores.length > 1 && ` y ${materia.profesores.length - 1} más`}
-                        </span>
-                      </div>
-                    )}
-
-                    {materia.comisiones && materia.comisiones.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {materia.comisiones.map((comision) => (
-                          <Badge key={comision.id} variant="secondary">
-                            {comision.nombre} ({formatCupo(comision)})
+                      {materia.descripcion && (
+                        <CardDescription className="mt-1">{materia.descripcion}</CardDescription>
+                      )}
+                      {materia.departamento?.nombre && (
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {materia.departamento.nombre}
                           </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {materia.horarios && materia.horarios.length > 0 && (
-                      <div className="space-y-1">
-                        {materia.horarios.slice(0, 2).map((horario, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {getDayName(horario.dia)} {horario.horaInicio} - {horario.horaFin}
-                            </span>
-                          </div>
-                        ))}
-                        {materia.horarios.length > 2 && (
-                          <span className="text-xs text-gray-600">
-                            +{materia.horarios.length - 2} horarios más
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t">
-                    <Button 
-                      className="w-full" 
-                      size="sm"
-                      onClick={() => setSelectedMateria(materia)}
-                    >
-                      Ver Detalles
-                      <ChevronRight className="h-4 w-4 ml-2" />
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-gray-500">
+                      Ver detalles <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
-                </CardContent>
+                </CardHeader>
+                {(materia.comisiones && materia.comisiones.length > 0) && (
+                  <CardContent>
+                    <div className="space-y-4">
+                      {materia.comisiones.map((comision) => (
+                        <div key={comision.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{comision.nombre}</h4>
+                            <Badge variant="secondary">
+                              {formatCupo(comision)} cupos
+                            </Badge>
+                          </div>
+                          
+                          {materia.horarios && materia.horarios.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {materia.horarios.map((horario, idx) => (
+                                <div key={idx} className="flex items-center text-sm text-gray-600">
+                                  <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
+                                  <span>{getDayName(horario.dia)}</span>
+                                  <Clock className="h-4 w-4 ml-3 mr-1.5 text-gray-400" />
+                                  <span>{horario.horaInicio} - {horario.horaFin}</span>
+                                  {horario.aula && (
+                                    <>
+                                      <MapPin className="h-4 w-4 ml-3 mr-1.5 text-gray-400" />
+                                      <span>{horario.aula}</span>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             ))}
           </div>
-        )}
-
-        {filteredMaterias.length === 0 && !loading && (
+        ) : (
           <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">No se encontraron materias</h3>
-            <p className="text-gray-600 mt-2">
-              Intenta ajustar tu búsqueda o filtros
+            <BookOpen className="h-12 w-12 mx-auto text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No se encontraron materias</h3>
+            <p className="mt-1 text-gray-500">
+              {searchTerm ? 'No hay materias que coincidan con tu búsqueda.' : 'No hay materias disponibles en este momento.'}
             </p>
+            {searchTerm && (
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => setSearchTerm('')}
+              >
+                Limpiar búsqueda
+              </Button>
+            )}
           </div>
         )}
       </div>

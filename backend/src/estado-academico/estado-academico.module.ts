@@ -3,10 +3,12 @@ import { Module } from '@nestjs/common';
 import { EstadoAcademicoService } from './estado-academico.service';
 import { EstadoAcademicoController } from './estado-academico.controller';
 import { InscripcionModule } from '../inscripcion/inscripcion.module';
+import { CorrelativasModule } from '../correlativas/correlativas.module';
 
 @Module({
   imports: [
     InscripcionModule, // Importamos el módulo de inscripción para usar sus servicios
+    CorrelativasModule,
   ],
   providers: [EstadoAcademicoService],
   controllers: [EstadoAcademicoController],

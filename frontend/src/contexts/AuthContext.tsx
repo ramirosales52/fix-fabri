@@ -1,80 +1,212 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import api from 'services/api';
-import type { AuthResponse, User } from 'types';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
 
-interface AuthContextState {
+type UserRole = 'admin' | 'profesor' | 'estudiante' | 'secretaria_academica';
+
+// Función para obtener la ruta según el rol
+export const getHomePathByRole = (role: UserRole = 'estudiante'): string => {
+  switch (role) {
+    case 'admin':
+      return '/admin';
+    case 'profesor':
+      return '/profesor';
+    case 'estudiante':
+      return '/(estudiante)/dashboard';
+    case 'secretaria_academica':
+      return '/secretaria';
+    default:
+      return '/';
+  }
+};
+
+export interface User {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: UserRole;
+  legajo?: string;
+  // Agrega otros campos según sea necesario
+}
+
+interface AuthContextType {
   user: User | null;
   token: string | null;
+  isAuthenticated: boolean;
   loading: boolean;
-  login: (legajo: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<User>;
   logout: () => void;
+  getHomePathByRole: (role?: UserRole) => string;
 }
 
-const AuthContext = createContext<AuthContextState | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'autogestion.auth';
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as { user: User; token: string };
-        setUser(parsed.user);
-        setToken(parsed.token);
-      } catch (error) {
-        console.warn('Failed to parse auth storage', error);
-        localStorage.removeItem(STORAGE_KEY);
+    const loadAuthData = async () => {
+      // No verificar el token si estamos en la página de login
+      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
-  }, []);
 
-  const login = async (legajo: string, password: string) => {
-    const response = await api.post<AuthResponse>('/auth/login', { legajo, password });
-    const { access_token, user: nextUser } = response.data;
+      try {
+        const storedToken = localStorage.getItem('auth_token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (storedToken && storedUser) {
+          // Verificar el token con el backend
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          });
 
-    setUser(nextUser);
-    setToken(access_token);
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+            setToken(storedToken);
+            setIsAuthenticated(true);
+            api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          } else {
+            // Si hay un error, limpiar el token inválido
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar los datos de autenticación:', error);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ token: access_token, user: nextUser })
-      );
-      // Mantener compatibilidad con otros servicios que leen estas claves
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify(nextUser));
-    }
-  };
+    loadAuthData();
+  }, [router]);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-  };
+  const login = useCallback(
+    async (identifier: string, password: string): Promise<User> => {
+      try {
+        setLoading(true);
+        
+        // Verificar que la URL de la API esté definida
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl) {
+          throw new Error('La URL de la API no está configurada');
+        }
 
-  const value = useMemo(
-    () => ({ user, token, loading, login, logout }),
-    [user, token, loading]
+        // Determinar si el identificador es un email o un legajo
+        const isEmail = identifier.includes('@');
+        const loginData = isEmail 
+          ? { email: identifier, password }
+          : { legajo: identifier, password };
+        
+        const loginUrl = `${apiUrl}/auth/login`;
+        console.log('Intentando iniciar sesión en:', loginUrl);
+        
+        const response = await fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+          credentials: 'include',
+        }).catch(error => {
+          console.error('Error de red al intentar iniciar sesión:', error);
+          throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+        });
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Error al procesar la respuesta del servidor:', jsonError);
+          throw new Error('La respuesta del servidor no es válida');
+        }
+        
+        if (!response.ok) {
+          console.error('Error en la respuesta del servidor:', {
+            status: response.status,
+            statusText: response.statusText,
+            data
+          });
+          throw new Error(data?.message || `Error en la autenticación (${response.status})`);
+        }
+        
+        if (!data || !data.user || !data.access_token) {
+          console.error('Datos de autenticación incompletos:', data);
+          throw new Error('Datos de autenticación incompletos');
+        }
+        
+        const { user, access_token } = data;
+        
+        // Guardar en localStorage
+        localStorage.setItem('auth_token', access_token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Actualizar estado
+        setUser(user);
+        setToken(access_token);
+        setIsAuthenticated(true);
+        api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+        
+        return user;
+        
+      } catch (error: any) {
+        console.error('Error en el inicio de sesión:', error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  const logout = useCallback(() => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+    delete api.defaults.headers.common['Authorization'];
+    router.push('/login');
+  }, [router]);
 
-export function useAuth() {
+  // Usar la función getHomePathByRole importada
+
+  const value = {
+    user,
+    token,
+    isAuthenticated,
+    loading,
+    login,
+    logout,
+    getHomePathByRole,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
-}
+};
