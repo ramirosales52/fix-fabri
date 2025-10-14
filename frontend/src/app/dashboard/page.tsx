@@ -32,7 +32,7 @@ export default function EstudianteDashboard() {
           <h2 className="text-xl font-semibold mb-4">Materias Inscriptas</h2>
           <p className="text-gray-600">Ver y gestionar tus materias inscriptas</p>
           <button 
-            onClick={() => router.push('/estudiante/materias')}
+            onClick={() => router.push('/materias')}
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
           >
             Ver materias
@@ -44,7 +44,7 @@ export default function EstudianteDashboard() {
           <h2 className="text-xl font-semibold mb-4">Asistencias</h2>
           <p className="text-gray-600">Consulta tu registro de asistencias</p>
           <button 
-            onClick={() => router.push('/estudiante/asistencias')}
+            onClick={() => router.push('/calificaciones')}
             className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
           >
             Ver asistencias
@@ -56,7 +56,7 @@ export default function EstudianteDashboard() {
           <h2 className="text-xl font-semibold mb-4">Exámenes</h2>
           <p className="text-gray-600">Consulta tus exámenes y notas</p>
           <button 
-            onClick={() => router.push('/estudiante/examenes')}
+            onClick={() => router.push('/examenes')}
             className="mt-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors"
           >
             Ver exámenes

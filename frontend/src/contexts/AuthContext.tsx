@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
@@ -12,7 +14,7 @@ export const getHomePathByRole = (role: UserRole = 'estudiante'): string => {
     case 'profesor':
       return '/profesor';
     case 'estudiante':
-      return '/(estudiante)/dashboard';
+      return '/dashboard';
     case 'secretaria_academica':
       return '/secretaria';
     default:
@@ -51,37 +53,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const loadAuthData = async () => {
-      // No verificar el token si estamos en la página de login
-      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
-        setLoading(false);
-        return;
-      }
-
       try {
         const storedToken = localStorage.getItem('auth_token');
         const storedUser = localStorage.getItem('user');
         
         if (storedToken && storedUser) {
-          // Verificar el token con el backend
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
-            headers: {
-              'Authorization': `Bearer ${storedToken}`,
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-            setToken(storedToken);
-            setIsAuthenticated(true);
-            api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-          } else {
-            // Si hay un error, limpiar el token inválido
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-          }
+          // Parsear el usuario almacenado
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         }
       } catch (error) {
         console.error('Error al cargar los datos de autenticación:', error);
@@ -93,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     loadAuthData();
-  }, [router]);
+  }, []);
 
   const login = useCallback(
     async (identifier: string, password: string): Promise<User> => {

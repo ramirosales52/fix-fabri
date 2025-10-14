@@ -69,6 +69,7 @@ export default function LoginPage() {
       setError(errorMessage);
     } finally {
       setLoading(false);
+    }
   };
 
   return (
@@ -158,4 +159,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} }
+}
